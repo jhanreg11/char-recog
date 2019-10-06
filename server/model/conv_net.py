@@ -30,8 +30,20 @@ pool_layer_test_info = {
 	'convmode_2': 'max',
 	3: 'relu',
 	4: 'maxpool',
-	'pool_size': 6
+	'pool_size': 6,
+	6: 'connected',
+	'layers_6': [108, 90, 80, 61]
 }
+
+def activate(n, deriv=False):
+    if deriv:
+        return np.multiply(n, np.subtract(1, n))
+    return 1 / (1 + np.exp(-n))
+
+def activate_tanh(n, deriv=False):
+    if deriv:
+        return 1 - np.tanh(n)**2
+    return np.tanh(n)
 
 def import_from_pkl(fp):
 	f = open(fp, 'wb')
@@ -114,9 +126,17 @@ class CNN:
 
 
 	def connected_layer(self, X, i):
-		pass
+		weights = []
+		for j in range(len(self.layers['layers_'+str(i)])-1):
+			weights.append(self.layers['weights_'+str(j)])
 
-classify(self, X, i):
+		for w in weights:
+			X = np.append(X, np.ones((1, 1)))
+			z = w.dot(X)
+			X = activate_tanh(z)
+		return X
+
+def classify(self, X, i):
 	"""
 	X - np.ndarray, 1d
 	return - 1 element ndarray
@@ -141,7 +161,7 @@ def create_weights(info):
 			new_info['bias_'+str(key)] = np.random.rand(dim[0])
 		elif new_info[key] == 'connected':
 			layers = new_info['layers_'+str(key)]
-			new_info['weights_0']= [np.random.rand(layers[1], layers[0]+1)]
+			new_info['weights_0']= np.random.rand(layers[1], layers[0]+1)
 			for i in range(1, len(layers)):
 				if i != len(layers)-1:
 					new_info['weights_'+str(i)] = np.random.rand(layers[i+1], layers[i]+1)
