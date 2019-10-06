@@ -2,3 +2,4 @@ server/venv
 server/__pycache__
 server/char_data
 server/matlab.zip
+.DS_Store
