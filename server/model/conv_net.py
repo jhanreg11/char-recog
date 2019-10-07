@@ -31,8 +31,12 @@ pool_layer_test_info = {
 	3: 'relu',
 	4: 'maxpool',
 	'pool_size': 6,
+	5: 'dropout',
+	'drop_5': .25,
 	6: 'connected',
-	'layers_6': [108, 90, 80, 61]
+	'layers_6': [108, 90, 80, 61],
+	7: 'softmax',
+	8: 'classify'
 }
 
 def activate(n, deriv=False):
@@ -51,12 +55,15 @@ def import_from_pkl(fp):
 
 class CNN:
 	def __init__(self, info, type='rand'):
+		self.drop = False
 		self.dispatch = {
 			'conv': self.conv_layer,
 			'relu': relu,
 			'maxpool': self.maxpool_layer,
 			'connected': self.connected_layer,
-			'classify': classify
+			'classify': classify,
+			'softmax': softmax,
+			'dropout': self.dropout
 			}
 		if type == 'test':
 			self.layers = create_weights(pool_layer_test_info)
@@ -124,6 +131,10 @@ class CNN:
 		print('max pool dimension:', pool_image.shape)
 		return pool_image
 
+	def dropout(self, X, i):
+		self.drop = True
+		self.retain_chance = 1 - self.layers['drop_'+str(i)]
+		return X
 
 	def connected_layer(self, X, i):
 		weights = []
@@ -131,19 +142,21 @@ class CNN:
 			weights.append(self.layers['weights_'+str(j)])
 
 		for w in weights:
+			if self.drop:
+				X *= self.retain_chance
 			X = np.append(X, np.ones((1, 1)))
 			z = w.dot(X)
 			X = activate_tanh(z)
 		return X
 
-def classify(self, X, i):
+def classify(X, i):
 	"""
 	X - np.ndarray, 1d
 	return - 1 element ndarray
 	"""
 	X.sort(axis=0)
 	print(X[0:9])
-	return np.argmax(X)
+	return X[np.argmax(X)]
 
 
 def load_weights(self, info):
@@ -192,6 +205,10 @@ def convolve(image, feature, border='max'):
 def relu(X, i):
 	new = np.zeros_like(X)
 	return np.where(X>new, X, new)
+
+def softmax(X, i):
+	ex = np.exp(X - np.max(X))
+	return ex / ex.sum()
 
 def cnn_test():
     c = CNN({}, 'test')
