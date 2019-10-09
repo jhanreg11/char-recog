@@ -20,7 +20,8 @@ sample_cnn_info = {
 	8: 'classify'
 }
 
-pool_layer_test_info = {
+real_cnn_info = {
+	'layer_num': 7,
 	0: 'conv',
 	'filters_0': (3, 3, 3, 3),
 	'convmode_0': 'max',
@@ -34,20 +35,17 @@ pool_layer_test_info = {
 	5: 'dropout',
 	'drop_5': .25,
 	6: 'connected',
-	'layers_6': [108, 90, 80, 61],
-	7: 'softmax',
-	8: 'classify'
+	'layers_6': [108, 61],
+	'activates_6': ['softmax'],
+	7: 'classify'
 }
 
-def activate(n, deriv=False):
-    if deriv:
-        return np.multiply(n, np.subtract(1, n))
-    return 1 / (1 + np.exp(-n))
-
-def activate_tanh(n, deriv=False):
-    if deriv:
-        return 1 - np.tanh(n)**2
-    return np.tanh(n)
+backprop_test = {
+	'layer_num': 1,
+	0: 'connected',
+	'layers_0': [2, 1],
+	'activates_0': ['softmax']
+}
 
 def import_from_pkl(fp):
 	f = open(fp, 'wb')
@@ -56,6 +54,7 @@ def import_from_pkl(fp):
 class CNN:
 	def __init__(self, info, type='rand'):
 		self.drop = False
+		self.train = False
 		self.dispatch = {
 			'conv': self.conv_layer,
 			'relu': relu,
@@ -63,10 +62,12 @@ class CNN:
 			'connected': self.connected_layer,
 			'classify': classify,
 			'softmax': softmax,
-			'dropout': self.dropout
+			'dropout': self.dropout,
+			'sigmoid': sigmoid,
+			'tanh': tanh
 			}
 		if type == 'test':
-			self.layers = create_weights(pool_layer_test_info)
+			self.layers = create_weights(backprop_test)
 		elif type == 'alpha':
 			self.layers = alpha_layers()
 		elif type == 'rand':
@@ -74,15 +75,86 @@ class CNN:
 		elif type == 'pre':
 			self.layers = info
 
-	def predict(self, X):
+	def predict(self, X, get_activations=False):
+		activations = []
+		zs = []
+		for key in range(self.layers['layer_num']):
+			print(self.layers[key])
+			if self.layers[key] in ['connected', 'conv', 'maxpool', 'softmax']:
+				h = self.dispatch[self.layers[key]](X, int(key), get_activations)
+			elif self.layers[key] in ['relu', 'classify', 'softmax']:
+				h = self.dispatch[self.layers[key]](X)
+			# for connected backprop
+			if get_activations and self.layers[key] == 'connected':
+				activations = (h[0])
+				zs = (h[1])
+				h = h[0][-1]
+			if get_activations and self.layers[key] == 'softmax':
+				activations.append()
+			X = h
+		return (activations, zs) if activations and zs else X
+
+	def get_weights(self, i):
+		weights = []
+		for j in range(len(self.layers['layers_'+str(i)])-1):
+			weights.append(self.layers['weights_'+str(j)])
+		return weights
+
+	def SGD(self, training_set, labels, epochs, learning_rate):
+		"""self.train = True
+
+		empty_0s = []
 		for key in self.layers:
 			if type(key) != int:
 				continue
-			h = self.dispatch[self.layers[key]](X, int(key))
-			X = h
-		return h
 
-	def conv_layer(self, X, i):
+			if self.layers[key] == 'connected':
+				empty_0s += self.get_weights()
+			if self.layers[key] == 'conv':
+
+		for i in range(training_set.shape[0]):
+			pass"""
+		print('cost before:', cross_entropy(training_set, labels))
+		for i in range(epochs):
+			for X, y in zip(training_set, labels):
+				update = self.connected_backprop(X, y, 0)
+				update *= learning_rate
+				self.get_weights()[0] -= update
+		print('cost after:', cross_entropy(training_set, labels))
+
+	def connected_backprop(self, X, y, i):
+		"""perfoms backprop for one layer of a NN with softmax and cross_entropy
+		"""
+		(activations, zs) = self.predict(X, True)
+		weights = self.get_weights(i)
+		delta_w = cross_entropy(activations[-1], y, True)
+		grad_w = np.zeros_like(weights[-1])
+		print(weights[-1].shape, len(activations), delta_w.shape)
+		for i in range(weights[-1].shape[0]):
+			for j in range(weights[-1].shape[1]):
+				grad_w[i,j] = activations[0][i]*delta_w[j]
+		return grad_w
+
+
+	def connected_layer(self, X, i, get_activations=False):
+		"""
+		LiteNN ff
+		"""
+		weights = self.get_weights(i)
+		activations, zs = [], []
+		activate_fns = self.layers['activates_'+str(i)]
+		for activate, w in zip(activate_fns, weights):
+			if self.drop:
+				X *= self.retain_chance
+			X = np.append(X, np.ones((1, 1)))
+			z = w.dot(X)
+			X = self.dispatch[activate](z)
+			if get_activations:
+				zs.append(z)
+				activations.append(X)
+		return (activations, zs) if activations and zs else X
+
+	def conv_layer(self, X, i, get_activations=False):
 		"""
 		X - 3d ndarray
 		i - layer number
@@ -110,7 +182,7 @@ class CNN:
 		print('conv result dimensions:', conv_features.shape)
 		return conv_features
 
-	def maxpool_layer(self, X, i):
+	def maxpool_layer(self, X, i, get_activations=False):
 		"""
 		X - np.ndarray, 3d
 		i - layer number
@@ -132,25 +204,13 @@ class CNN:
 		return pool_image
 
 	def dropout(self, X, i):
+		print('hi')
 		self.drop = True
 		self.retain_chance = 1 - self.layers['drop_'+str(i)]
 		return X
 
-	def connected_layer(self, X, i):
-		weights = []
-		for j in range(len(self.layers['layers_'+str(i)])-1):
-			weights.append(self.layers['weights_'+str(j)])
-
-		for w in weights:
-			if self.drop:
-				X *= self.retain_chance
-			X = np.append(X, np.ones((1, 1)))
-			z = w.dot(X)
-			X = activate_tanh(z)
-		return X
-
-def classify(X, i):
-	"""
+def classify(X):
+	"""used for testing output only, eventually will be handled by preprocessor
 	X - np.ndarray, 1d
 	return - 1 element ndarray
 	"""
@@ -158,7 +218,7 @@ def classify(X, i):
 	print(X[0:9])
 	return X[np.argmax(X)]
 
-
+##### WEIGHT CREATION #####
 def load_weights(self, info):
 	return copy.deepcopy(info)
 
@@ -202,17 +262,45 @@ def convolve(image, feature, border='max'):
 		target = target[start_i[0]:end_i[0], start_i[1]:end_i[1]]
 	return target
 
-def relu(X, i):
+##### ACTIVATION FUNCTIONS #####
+def relu(X, deriv=False):
 	new = np.zeros_like(X)
 	return np.where(X>new, X, new)
 
-def softmax(X, i):
-	ex = np.exp(X - np.max(X))
-	return ex / ex.sum()
+def softmax(X, deriv=False):
+	if not deriv:
+		exps = np.exp(X - np.max(X))
+		return exps / np.sum(exps)
+	else:
+		raise Error('Unimplemented')
 
+def sigmoid(n, deriv=False):
+    if deriv:
+        return np.multiply(n, np.subtract(1, n))
+    return 1 / (1 + np.exp(-n))
+
+def tanh(n, deriv=False):
+    if deriv:
+        return 1 - np.tanh(n)**2
+    return np.tanh(n)
+
+##### LOSS FUNCTIONS #####
+
+def cross_entropy(y, p, deriv=False):
+	"""
+	when deriv = True, returns deriv of cost wrt z
+	"""
+	if deriv:
+		return y - p
+	else:
+		p = np.clip(p, 1e-12, 1. - 1e-12)
+		N = p.shape[0]
+		return -np.sum(y*np.log(p))/N
+
+##### TESTING #####
+X = [np.array([[0],[0]]), np.array([[0],[1]]), np.array([[1],[0]]), np.array([[1],[1]])]
+y = [np.array([[0]]), np.array([[1]]), np.array([[1]]), np.array([[0]])]
 def cnn_test():
-    c = CNN({}, 'test')
-    X = np.random.rand(3, 32, 32)
-    print('result:', c.predict(X))
-
+	c = CNN({}, 'test')
+	c.SGD(X, y, 1, .3)
 cnn_test()
