@@ -2,6 +2,7 @@ var clickX = new Array()
 var clickY = new Array()
 var clickDrag = new Array()
 var paint
+var context = $('#drawing-field')[0].getContext('2d')
 
 function addClick(x, y, dragging) {
   clickX.push(x);
@@ -14,7 +15,7 @@ function redraw() {
 
   context.strokeStyle = "#df4b26";
   context.lineJoin = "round";
-  context.lineWidth = 5;
+  context.lineWidth = 10;
 
   for(var i=0; i < clickX.length; i++) {
     context.beginPath();
