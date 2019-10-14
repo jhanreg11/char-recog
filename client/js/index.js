@@ -31,7 +31,7 @@ function init() {
   ctx = canvas[0].getContext('2d')
   function mouseEvent (e) {
     offset = $('#drawing-field').offset()
-    brush.x = e.pageX + offset.left
+    brush.x = e.pageX - offset.left
     brush.y = e.pageY - offset.top
     currentStroke.points.push({
       x: brush.x,
