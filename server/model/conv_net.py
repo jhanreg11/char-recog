@@ -43,7 +43,7 @@ real_cnn_info = {
 xor_test = {
 	'layer_num': 1,
 	0: 'connected',
-	'layers_0': [2, 2, 1],
+	'layers_0': [2, 2, 2],
 	'activates_0': ['sigmoid', 'sigmoid', 'softmax']
 }
 
@@ -79,7 +79,7 @@ class CNN:
 		activations = []
 		zs = []
 		for key in range(self.layers['layer_num']):
-			print(self.layers[key])
+			#print(self.layers[key])
 			if self.layers[key] in ['connected', 'conv', 'maxpool', 'softmax']:
 				h = self.dispatch[self.layers[key]](X, int(key), get_activations)
 			elif self.layers[key] in ['relu', 'classify', 'softmax']:
@@ -99,8 +99,11 @@ class CNN:
 		return weights
 
 	def set_weights(self, new, i):
-		for j in range(len(self.layer['layers_'+str(i)])-1):
+		for j in range(len(self.layers['layers_'+str(i)])-1):
 			self.layers['weights_'+str(j)] = new[j]
+
+	def add_weight(self, i, j, k, val):
+		self.layers['weights_'+str(i)][j,k] += np.float64(val)
 
 	def mini_batch_GD(self, data, batch_size, epochs, learning_rate):
 		"""
@@ -120,12 +123,31 @@ class CNN:
 		grad_w = [np.zeros_like(w) for w in self.get_weights(i)]
 		for x, y in data:
 			grad_w = [n+o for n, o in zip(self.connected_backprop(x, y, i), grad_w)]
-		self.set_weights([w-(learning_rate/len(data))*gw for w, gw in zip(self.weights, grad_w)], i)
+		self.set_weights([w-(learning_rate/len(data))*gw for w, gw in zip(self.get_weights(i), grad_w)], i)
+
+	def gradient_check(self, x, y, i, epsilon=1e-4):
+		weights = self.get_weights(i)
+		grad_w = [np.zeros_like(w) for w in weights]
+		for i in range(len(weights)):
+			for j in range(weights[i].shape[0]):
+				for k in range(weights[i].shape[1]):
+					#print(self.layers['weights_'+str(i)][j,k])
+					self.add_weight(i,j,k, epsilon)
+					#print(self.layers['weights_'+str(i)][j,k])
+					out1 = cross_entropy(self.predict(x), y)
+					self.add_weight(i,j,k, -2*epsilon)
+					#print(self.layers['weights_'+str(i)][j,k])
+					out2 = cross_entropy(self.predict(x), y)
+					print(out1, out2)
+					grad_w[i][j,k] = np.float64(out1 - out2) / (2*epsilon)
+					weights[i][j,k] += epsilon
+		return grad_w
 
 	def connected_backprop(self, X, y, i):
 		"""perfoms backprop for one layer of a NN with softmax and cross_entropy
 		"""
 		(activations, zs) = self.predict(X, True)
+		activations.insert(0, X)
 		weights = self.get_weights(i)
 		activate_fns = self.layers['activates_'+str(i)]
 		deltas = [0 for _ in range(len(weights))]
@@ -134,11 +156,13 @@ class CNN:
 		#print('delta L:', deltas[-1], 'activations L-1:',activations[-2])
 		grad_w[-1] = np.dot(deltas[-1], np.vstack([activations[-2], np.ones((1, 1))]).transpose()) # assumes output activation is softmax
 		for i in range(len(weights)-2, -1, -1):
-			#print('i', i, 'wT', weights[i+1].transpose(), '\nd+1', deltas[i+1], '\nzi', np.vstack([self.dispatch[activate_fns[i]](zs[i], True), np.ones((1, 1))]))
-			deltas[i] = np.dot(weights[i+1].transpose(), deltas[i+1]) * np.vstack([self.dispatch[activate_fns[i]](zs[i], True), np.ones((1, 1))])
-			grad_w[i] = np.dot(deltas[i], np.vstack([activations[i-1], np.ones((1,1))]).transpose())
-			print('delta', i, ':', deltas[i], '\ngrad:', grad_w[i])
-		print([w.shape for w in grad_w], [w.shape for w in weights])
+			# print('i', i, 'wT', weights[i+1].transpose(), '\nd+1', deltas[i+1], '\nzi', np.vstack([self.dispatch[activate_fns[i]](zs[i], True), np.ones((1, 1))]))
+			deltas[i] = np.dot(weights[i+1][:, :-1].transpose(), deltas[i+1]) * self.dispatch[activate_fns[i]](activations[i], True)
+			grad_w[i] = np.hstack((np.dot(deltas[i], activations[max(0, i-1)].transpose()), deltas[i]))
+			# print('delta', i, ':', deltas[i], '\ngrad:', grad_w[i])
+		# print([w.shape for w in grad_w], [w.shape for w in weights])
+		# other = self.gradient_check(X, y, i)
+		# print('numerical:', other, '\nanalytic:', grad_w)
 		return grad_w
 
 	def connected_layer(self, X, i, get_activations=False):
@@ -261,6 +285,7 @@ def create_weights(info):
 			for i in range(1, len(layers)):
 				if i != len(layers)-1:
 					new_info['weights_'+str(i)] = np.random.rand(layers[i+1], layers[i]+1)
+					new_info['weights_'+str(i)][:, -1] = np.zeros((layers[i+1]))
 					# allows for negative weights
 					for j in range(layers[i+1]):
 						for k in range(layers[i]+1):
@@ -282,9 +307,12 @@ def softmax(X, deriv=False):
 		raise Error('Unimplemented')
 
 def sigmoid(n, deriv=False):
-    if deriv:
-        return np.multiply(n, np.subtract(1, n))
-    return 1 / (1 + np.exp(-n))
+	n = np.clip(n, 1e-12, 1.-1e-12)
+	if deriv:
+		n = np.multiply(n, np.subtract(1, n))
+	else:
+		n = 1 / (1 + np.exp(-n))
+	return n
 
 def tanh(n, deriv=False):
     if deriv:
@@ -302,7 +330,7 @@ def cross_entropy(y, p, deriv=False):
 	else:
 		p = np.clip(p, 1e-12, 1. - 1e-12)
 		N = p.shape[0]
-		return -np.sum(y*np.log(p))/N
+		return -np.sum(y*np.log(p))/(N)
 
 def MSE(y, p, deriv=False):
 	if deriv:
@@ -312,14 +340,14 @@ def MSE(y, p, deriv=False):
 
 ##### TESTING #####
 X = [np.array([[0],[0]]), np.array([[0],[1]]), np.array([[1],[0]]), np.array([[1],[1]])]
-y = [np.array([[0]]), np.array([[1]]), np.array([[1]]), np.array([[0]])]
+y = [np.array([[1], [0]]), np.array([[0], [1]]), np.array([[0], [1]]), np.array([[1], [0]])]
 data = []
 for x, t in zip(X, y):
 	data.append((x, t))
 
 def cnn_test():
 	c = CNN({}, 'test')
-	c.mini_batch_GD(data, 1, 100, .1)
+	c.mini_batch_GD(data, 1, 10000, .001)
 	for x in X:
 		print(c.predict(x))
 cnn_test()
