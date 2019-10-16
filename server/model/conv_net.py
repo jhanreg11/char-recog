@@ -44,7 +44,7 @@ xor_test = {
 	'layer_num': 1,
 	0: 'connected',
 	'layers_0': [2, 2, 2],
-	'activates_0': ['sigmoid', 'sigmoid', 'softmax']
+	'activates_0': ['sigmoid', 'softmax']
 }
 
 def import_from_pkl(fp):
@@ -116,16 +116,17 @@ class CNN:
 			for b in batches:
 				self.batch_GD(b, learning_rate, 0)
 
-	def batch_GD(self, data, learning_rate, i):
+	def batch_GD(self, data, learning_rate, i, epochs=1):
 		"""
 		Batch gradient descent
 		"""
 		grad_w = [np.zeros_like(w) for w in self.get_weights(i)]
-		for x, y in data:
-			grad_w = [n+o for n, o in zip(self.connected_backprop(x, y, i), grad_w)]
-		self.set_weights([w-(learning_rate/len(data))*gw for w, gw in zip(self.get_weights(i), grad_w)], i)
+		for _ in range(epochs):
+			for x, y in data:
+				grad_w = [n+o for n, o in zip(self.connected_backprop(x, y, i), grad_w)]
+			self.set_weights([w-(learning_rate/len(data))*gw for w, gw in zip(self.get_weights(i), grad_w)], i)
 
-	def gradient_check(self, x, y, i, epsilon=1e-4):
+	def gradient_check(self, x, y, i, epsilon=1e-7):
 		weights = self.get_weights(i)
 		grad_w = [np.zeros_like(w) for w in weights]
 		for i in range(len(weights)):
@@ -138,7 +139,7 @@ class CNN:
 					self.add_weight(i,j,k, -2*epsilon)
 					#print(self.layers['weights_'+str(i)][j,k])
 					out2 = cross_entropy(self.predict(x), y)
-					print(out1, out2)
+					# print(out1, out2)
 					grad_w[i][j,k] = np.float64(out1 - out2) / (2*epsilon)
 					weights[i][j,k] += epsilon
 		return grad_w
@@ -152,17 +153,19 @@ class CNN:
 		activate_fns = self.layers['activates_'+str(i)]
 		deltas = [0 for _ in range(len(weights))]
 		grad_w = [0 for _ in range(len(weights))]
+		# print('activations:', activations, '\nzs:', zs)
 		deltas[-1] = cross_entropy(y, activations[-1], True)
-		#print('delta L:', deltas[-1], 'activations L-1:',activations[-2])
+		# print('delta L:', deltas[-1], 'activations L-1:',activations[-2])
 		grad_w[-1] = np.dot(deltas[-1], np.vstack([activations[-2], np.ones((1, 1))]).transpose()) # assumes output activation is softmax
 		for i in range(len(weights)-2, -1, -1):
 			# print('i', i, 'wT', weights[i+1].transpose(), '\nd+1', deltas[i+1], '\nzi', np.vstack([self.dispatch[activate_fns[i]](zs[i], True), np.ones((1, 1))]))
-			deltas[i] = np.dot(weights[i+1][:, :-1].transpose(), deltas[i+1]) * self.dispatch[activate_fns[i]](activations[i], True)
+			deltas[i] = np.dot(weights[i+1][:, :-1].transpose(), deltas[i+1]) * self.dispatch[activate_fns[i]](zs[i], True)
+			# print('delta i:', deltas[i])
 			grad_w[i] = np.hstack((np.dot(deltas[i], activations[max(0, i-1)].transpose()), deltas[i]))
 			# print('delta', i, ':', deltas[i], '\ngrad:', grad_w[i])
 		# print([w.shape for w in grad_w], [w.shape for w in weights])
 		# other = self.gradient_check(X, y, i)
-		# print('numerical:', other, '\nanalytic:', grad_w)
+		# print('input:', X, '\nweights:', weights, '\nnumerical:', other, '\nanalytic:', grad_w)
 		return grad_w
 
 	def connected_layer(self, X, i, get_activations=False):
@@ -307,7 +310,7 @@ def softmax(X, deriv=False):
 		raise Error('Unimplemented')
 
 def sigmoid(n, deriv=False):
-	n = np.clip(n, 1e-12, 1.-1e-12)
+	n = np.clip(n, -500, 500)
 	if deriv:
 		n = np.multiply(n, np.subtract(1, n))
 	else:
@@ -328,7 +331,7 @@ def cross_entropy(y, p, deriv=False):
 		ret = p - y
 		return ret
 	else:
-		p = np.clip(p, 1e-12, 1. - 1e-12)
+		p = np.clip(p, 1e-12, 1.)
 		N = p.shape[0]
 		return -np.sum(y*np.log(p))/(N)
 
@@ -347,7 +350,8 @@ for x, t in zip(X, y):
 
 def cnn_test():
 	c = CNN({}, 'test')
-	c.mini_batch_GD(data, 1, 10000, .001)
+	# c.set_weights([np.array([[.904, -.732, -.863], [.114, -.817, .440]]), np.array([[-.854, .563, -.949], [.286, -.141, .972]])], 0)
+	c.batch_GD(data, .04, 0, 1000)
 	for x in X:
 		print(c.predict(x))
 cnn_test()

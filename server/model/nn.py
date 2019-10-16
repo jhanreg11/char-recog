@@ -1,9 +1,9 @@
 import numpy as np
 
 def sigmoid(n, deriv=False):
-    n = np.clip(n, 1e-12, 1. - 1e-12)
+    n = np.clip(n, -500, 500)
     if deriv:
-        return np.multiply(n, np.subtract(1, n))
+        return np.multiply(n, np.subtract(1., n))
     return 1 / (1 + np.exp(-n))
 
 def softmax(X, deriv=False):
@@ -24,6 +24,10 @@ def cross_entropy(y, p, deriv=False):
 		p = np.clip(p, 1e-12, 1. - 1e-12)
 		N = p.shape[0]
 		return -np.sum(y*np.log(p))/(N)
+
+def MSE(y, p, deriv=False):
+    if deriv:
+        return p - y
 
 class NN:
     def __init__(self, layers, activations):
@@ -68,13 +72,13 @@ class NN:
         deltas[-1] = cross_entropy(y, activations[-1], True) # assumes output activation is softmax
         grad_w[-1] = np.dot(deltas[-1], np.vstack([activations[-2], np.ones((1, 1))]).transpose())
         for i in range(len(self.weights)-2, -1, -1):
-            deltas[i] = np.dot(self.weights[i+1][:, :-1].transpose(), deltas[i+1]) * self.activate_fns[i](zs[i][:-1, :], True)
+            deltas[i] = np.dot(self.weights[i+1][:, :-1].transpose(), deltas[i+1]) * self.activate_fns[i](zs[i], True)
             grad_w[i] = np.hstack((np.dot(deltas[i], activations[max(0, i-1)].transpose()), deltas[i]))
         # check gradient
         num_gw = self.gradient_check(X, y, i)
-        print('numerical:', num_gw, '\nanalytic:', grad_w)
+        #print('numerical:', num_gw, '\nanalytic:', grad_w)
 
-        return grad_w
+        return num_gw
 
     def gradient_check(self, x, y, i, epsilon=1):
         """Numerically calculate the gradient in order to check analytical correctness"""
@@ -91,15 +95,48 @@ class NN:
         return grad_w
 
 ##### TESTING #####
-X = [np.array([[0],[0]]), np.array([[0],[1]]), np.array([[1],[0]]), np.array([[1],[1]])]
-y = [np.array([[1], [0]]), np.array([[0], [1]]), np.array([[0], [1]]), np.array([[1], [0]])]
+X = [np.array([[0.],[0.]]), np.array([[0.],[1.]]), np.array([[1.],[0.]]), np.array([[1.],[1.]])]
+y = [np.array([[1.], [0.]]), np.array([[0.], [1.]]), np.array([[0.], [1.]]), np.array([[1.], [0.]])]
+# y = [np.array([[0]]), np.array([[1]]), np.array([[1]]), np.array([[0]])]
+# weights = [np.array([[.904, -.732, -.863], [.114, -.817, .440]]), np.array([[-.854, .563, -.949], [.286, -.141, .972]])]
+weights = [np.random.rand(2, 3), np.random.rand(2, 3)]
+print(weights)
+for _ in range(1000):
+    dcdw0, dcdw1 = np.zeros((2, 3)), np.zeros((2, 3))
+    for i in range(4):
+        #Feedforward
+        a0 = X[i]
+        z0 = weights[0].dot(np.vstack([a0, np.ones((1, 1))]))
+        a1 = sigmoid(z0)
+        z1 = weights[1].dot(np.vstack([a1, np.ones((1, 1))]))
+        a2 = softmax(z1)
+        # print('output:', a2, 'expected:', y[i])
+
+        #backprop
+        # del1 =  MSE(y[i], a2, True)*sigmoid(a2, True)
+        del1 = cross_entropy(y[i], a2, True)
+        dcdw1 += del1.dot(np.vstack([a1, np.ones((1, 1))]).T)
+        del0 = weights[1][:, :-1].T.dot(del1)*sigmoid(a1, True)
+        dcdw0 += del0.dot(np.vstack([a0, np.ones((1, 1))]).T)
+    weights[0] -= .75*dcdw0
+    weights[1] -= .75*dcdw1
+
+#showing results
+print('####TRAINING RESULTS####')
+for i in range(4):
+    a0 = X[i]
+    z0 = weights[0].dot(np.vstack([a0, np.ones((1, 1))]))
+    a1 = sigmoid(z0)
+    z1 = weights[1].dot(np.vstack([a1, np.ones((1, 1))]))
+    a2 = softmax(z1)
+    print('\ninput:', a0, '\noutput:', a2, '\nexpected:', y[i], '\ncost:', cross_entropy(y[i], a2))
 data = []
 for x, t in zip(X, y):
 	data.append((x, t))
 
 def nn_test():
 	c = NN([2, 2, 2], [sigmoid, sigmoid, softmax])
-	c.sgd(data, 1, .01)
+	c.sgd(data, 1000, .01)
 	for x in X:
 		print(c.ff(x))
-nn_test()
+# nn_test()

@@ -1,3 +1,5 @@
+
+//////CANVAS DRAWING
 var canvas, ctx,
   brush = {
     x: 0,
@@ -68,3 +70,9 @@ function init() {
 }
 
 $(init)
+
+
+
+/////PREDICTION PREPROCESSING
+offset = $('#drawing-field').offset()
+var imgData = ctx.getImageData(offset.left, offset.top, canvas.width(), canvas.height())
