@@ -75,7 +75,11 @@ class CNN:
 			'softmax': softmax,
 			'dropout': self.dropout,
 			'sigmoid': sigmoid,
-			'tanh': tanh
+			'tanh': tanh,
+			'relu_back': relu_backprop,
+			'connected_back': self.connected_backprop,
+			'conv_back': self.conv_backprop,
+			'maxpool_back': self.maxpool_backprop,
 			}
 		if type == 'test':
 			self.layers = create_weights(xor_test)
@@ -96,10 +100,11 @@ class CNN:
 			elif self.layers[key] in ['relu', 'classify', 'softmax', 'dropout']:
 				h = self.dispatch[self.layers[key]](X)
 			# for connected backprop
-			if get_activations and self.layers[key] == 'connected':
-				activations = (h[0])
-				zs = (h[1])
-				h = h[0][-1]
+			if get_activations:
+				if self.layers[key] == 'connected':
+					activations.append(h[0])
+					zs.append(h[1])
+					h = h[0][-1]
 			X = h
 		return (activations, zs) if activations and zs else X
 
@@ -134,29 +139,15 @@ class CNN:
 		grad_w = [np.zeros_like(w) for w in self.get_weights(i)]
 		for _ in range(epochs):
 			for x, y in data:
+				cache = []
+				for i in range(self.layers['layer_num']):
+					if self.layers[i] == 'conv':
+
 				grad_w = [n+o for n, o in zip(self.connected_backprop(x, y, i), grad_w)]
 			self.set_weights([w-learning_rate*gw for w, gw in zip(self.get_weights(i), grad_w)], i)
 
-	def gradient_check(self, x, y, i, epsilon=1e-7):
-		weights = self.get_weights(i)
-		grad_w = [np.zeros_like(w) for w in weights]
-		for i in range(len(weights)):
-			for j in range(weights[i].shape[0]):
-				for k in range(weights[i].shape[1]):
-					#print(self.layers['weights_'+str(i)][j,k])
-					self.add_weight(i,j,k, epsilon)
-					#print(self.layers['weights_'+str(i)][j,k])
-					out1 = cross_entropy(self.predict(x), y)
-					self.add_weight(i,j,k, -2*epsilon)
-					#print(self.layers['weights_'+str(i)][j,k])
-					out2 = cross_entropy(self.predict(x), y)
-					# print(out1, out2)
-					grad_w[i][j,k] = np.float64(out1 - out2) / (2*epsilon)
-					weights[i][j,k] += epsilon
-		return grad_w
-
 	def connected_backprop(self, X, y, i):
-		"""perfoms backprop for one layer of a NN with softmax and cross_entropy
+		"""perfoms backprop for one layer of a NN with softmax and cross_entropy, returns weight gradients and dE/dX
 		"""
 		(activations, zs) = self.predict(X, True)
 		activations.insert(0, X)
@@ -177,6 +168,20 @@ class CNN:
 		# print([w.shape for w in grad_w], [w.shape for w in weights])
 		# other = self.gradient_check(X, y, i)
 		# print('input:', X, '\nweights:', weights, '\nnumerical:', other, '\nanalytic:', grad_w
+		return grad_w
+
+	def gradient_check(self, x, y, i, epsilon=1e-7):
+		weights = self.get_weights(i)
+		grad_w = [np.zeros_like(w) for w in weights]
+		for i in range(len(weights)):
+			for j in range(weights[i].shape[0]):
+				for k in range(weights[i].shape[1]):
+					self.add_weight(i,j,k, epsilon)
+					out1 = cross_entropy(self.predict(x), y)
+					self.add_weight(i,j,k, -2*epsilon)
+					out2 = cross_entropy(self.predict(x), y)
+					grad_w[i][j,k] = np.float64(out1 - out2) / (2*epsilon)
+					weights[i][j,k] += epsilon
 		return grad_w
 
 	def connected_layer(self, X, i, get_activations=False):
@@ -358,16 +363,16 @@ def MSE(y, p, deriv=False):
 		return .5*(y-p)**2
 
 ##### TESTING #####
-X = [np.array([[0],[0]]), np.array([[0],[1]]), np.array([[1],[0]]), np.array([[1],[1]])]
-y = [np.array([[1], [0]]), np.array([[0], [1]]), np.array([[0], [1]]), np.array([[1], [0]])]
 
-X2 = [np.array([[0]]), np.array([[3.14/2]]), np.array([[3.14]]), np.array([[3*3.14/2]]), np.array([[2*3.14]])]
-y2 = [np.array([[0], [1]]), np.array([[1], [0]]), np.array([[0], [1]]), np.array([[1], [0]]), np.array([[0], [1]])]
-data = []
-for x, t in zip(X, y):
-	data.append((x, t))
+def training_test():
+	X = [np.array([[0],[0]]), np.array([[0],[1]]), np.array([[1],[0]]), np.array([[1],[1]])]
+	y = [np.array([[1], [0]]), np.array([[0], [1]]), np.array([[0], [1]]), np.array([[1], [0]])]
 
-def cnn_test():
+	X2 = [np.array([[0]]), np.array([[3.14/2]]), np.array([[3.14]]), np.array([[3*3.14/2]]), np.array([[2*3.14]])]
+	y2 = [np.array([[0], [1]]), np.array([[1], [0]]), np.array([[0], [1]]), np.array([[1], [0]]), np.array([[0], [1]])]
+	data = []
+	for x, t in zip(X, y):
+		data.append((x, t))
 	#for i in range(1, 100, 5):
 #	print('\n\nrate:', i/100)
 	c = CNN({}, 'test')
@@ -377,4 +382,3 @@ def cnn_test():
 		print('input:', x, '\nexpected:', t)
 		p = c.predict(x)
 		print('got:', p, 'error:', cross_entropy(t, p))
-cnn_test()
