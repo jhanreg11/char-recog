@@ -62,23 +62,20 @@ class NN:
                 grad_w = [n+o for n, o in zip(self.backprop(x, y), grad_w)]
             self.weights = [w-(learning_rate/len(data))*gw for w, gw in zip(self.weights, grad_w)]
 
-    def backprop(self, X, y):
-        """perfoms backprop for one layer of a NN with softmax/cross_entropy output layer"""
-        (activations, zs) = self.ff(X, True)
-        activations.insert(0, X)
-
-        deltas = [0 for _ in range(len(self.weights))]
-        grad_w = [0 for _ in range(len(self.weights))]
-        deltas[-1] = cross_entropy(y, activations[-1], True) # assumes output activation is softmax
-        grad_w[-1] = np.dot(deltas[-1], np.vstack([activations[-2], np.ones((1, 1))]).transpose())
-        for i in range(len(self.weights)-2, -1, -1):
-            deltas[i] = np.dot(self.weights[i+1][:, :-1].transpose(), deltas[i+1]) * self.activate_fns[i](zs[i], True)
-            grad_w[i] = np.hstack((np.dot(deltas[i], activations[max(0, i-1)].transpose()), deltas[i]))
-        # check gradient
-        num_gw = self.gradient_check(X, y, i)
-        #print('numerical:', num_gw, '\nanalytic:', grad_w)
-
-        return num_gw
+    def backprop(self, cache, de_dzL=None):
+        """perfoms backprop for one layer of a NN with softmax/cross_entropy output layer
+        de_dzL - derivative of crossentropy loss wrt nonactivated output of last layer"""
+		(activations, zs) = self.ff(X, True)
+		activations.insert(0, X)
+		activate_fns = self.layers['activates_'+str(i)]
+		deltas = [0 for _ in range(len(self.weights))]
+		grad_w = [0 for _ in range(len(self.weights))]
+		deltas[-1] = cross_entropy(y, activations[-1], True)
+		grad_w[-1] = np.dot(deltas[-1], np.vstack([activations[-2], np.ones((1, 1))]).transpose()) # assumes output activation is softmax
+		for i in range(len(self.weights)-2, -1, -1):
+			deltas[i] = self.weights[i+1][:, :-1].T.dot(deltas[i+1]) * self.dispatch[activate_fns[i]](activations[i+1], True)
+			grad_w[i] = np.hstack((deltas[i].dot(activations[i].T), deltas[i]))
+		return grad_w
 
     def gradient_check(self, x, y, i, epsilon=1):
         """Numerically calculate the gradient in order to check analytical correctness"""

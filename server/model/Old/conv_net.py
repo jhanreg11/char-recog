@@ -134,15 +134,13 @@ class CNN:
 
 	def batch_GD(self, data, learning_rate, i, epochs=1):
 		"""
-		Batch gradient descent
+		Batch gradient descent, handles forward pass and creating cache
 		"""
 		grad_w = [np.zeros_like(w) for w in self.get_weights(i)]
 		for _ in range(epochs):
 			for x, y in data:
-				cache = []
 				for i in range(self.layers['layer_num']):
 					if self.layers[i] == 'conv':
-
 				grad_w = [n+o for n, o in zip(self.connected_backprop(x, y, i), grad_w)]
 			self.set_weights([w-learning_rate*gw for w, gw in zip(self.get_weights(i), grad_w)], i)
 
@@ -208,6 +206,9 @@ class CNN:
 				activations.append(X)
 
 		return (activations, zs) if activations and zs else X
+
+	def conv_backprop(self, cache, i):
+		pass
 
 	def conv_layer(self, X, i, get_activations=False):
 		"""
