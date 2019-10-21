@@ -3,12 +3,11 @@ import numpy as np
 def relu(X, deriv=False):
     if deriv:
         X = np.copy(X)
-        X[X<=0] = 0
-        X[X>0] = 1
+        X[X <= 0] = 0
+        X[X > 0] = 1
         return X
-
-	new = np.zeros_like(X)
-	return np.where(X>new, X, new)
+    new = np.zeros_like(X)
+    return np.where(X > new, X, new)
 
 class ConvLayer:
     """Convolutional layer of a CNN
@@ -21,7 +20,7 @@ class ConvLayer:
     - conv_dim: dimension of one side of the output, int
     """
 
-    def __init__(self, filters, activation=relu, mode='max'):
+    def __init__(self, filters, mode='max', activation=relu):
         if len(filters) == 3:
             filters = (filters[0], 1, filters[1], filters[2])
         self.filters = np.random.rand(filters[0], filters[1], filters[2], filters[3])
@@ -58,26 +57,59 @@ class ConvLayer:
         for i in range(filter_number):
             conv_image = np.zeros((self.conv_dim, self.conv_dim))
             for j in range(image_channels):
-                conv_image += self.convolve(X[j], self.filters[i, j], self.mode) + self.bias[i]
+                conv_image += convolve(X[j], self.filters[i, j], self.mode) + self.bias[i]
             conv_features[i] = conv_image
 
         a = self.activation(conv_features)
 
         # storing info for backprop
         if cache:
-            self.cache['in'] = X
+            self.cache['in'] = X.astype(np.float64)
             self.cache['z'] = conv_features
             self.cache['a'] = a
 
         return a
 
     def backprop(self, dE_da):
-        dz = dE_da * self.activation(self.cache['in'], True)
-        db = dz.sum(axis=(1, 2))
+        """calculates gradient of filters, biases, and inputs into layer
+        parameters -
+        - dE_da: gradient of error function wrt to activated output (a) of layer, 3d np.ndarray
+        return -
+        - dE_dIn: gradient of error wrt input (X), 3d np.ndarray
+        - dw: gradient of filters, 4d np.ndarray
+        - db: gradient of biases, 1d np.ndarray
+        """
+        X, z, a = self.cache['in'], self.cache['z'], self.cache['a']
+        fshape = self.filters.shape
+        dz = dE_da * self.activation(a, True)
+        db = dz.sum(axis=(1, 2))  # poss error
+
+        # add padding if necessary
+        if self.mode == 'max':
+            X = pad(X, fshape[-1]-1)
+
+        dw = np.zeros_like(self.filters)
+        dE_dIn = np.zeros_like(X)
+        for i in range(fshape[0]):
+            for j in range(fshape[1]):
+                dw[i, j] += convolve(X[j], dz[i], 'valid')
+                print('filter shape:', self.filters[i, j].shape, 'dz shape:', dz[i].shape, 'dE_dIn shape:', dE_dIn[j].shape, 'convolved shape:', convolve(self.filters[i, j], dz[i], 'valid').shape)
+                dE_dIn[j] += convolve(np.rot90(self.filters[i, j], 2, (0, 1)), dz[i], 'max')
+        # remove padding if necessary
+        if self.mode == 'max':
+            dE_dIn = dE_dIn[:, fshape[-1]-1:-fshape[-1]-1, fshape[-1]-1:fshape[-1]-1]
+        return dE_dIn, dw, db
 
 
-
+#### HELPER FUNCTIONS ####
 def convolve(image, feature, border='max'):
+    """2d convolution using fft
+    parameters -
+    - image: image to be convolved, 2d nxn np.ndarray
+    - feature: filter to convolve image with, 2d mxm np.ndarray
+    - border: border mode, str
+    return -
+    - target: convolution output, 2d np.ndarray"""
     image_dim = np.array(image.shape)
     feature_dim = np.array(feature.shape)
     target_dim = image_dim + feature_dim - 1
@@ -92,3 +124,30 @@ def convolve(image, feature, border='max'):
         end_i = start_i + valid_dim
         target = target[start_i[0]:end_i[0], start_i[1]:end_i[1]]
     return target
+
+
+def pad(image, extra_layers):
+    """adds extra_layers rows/cols of zeros to image
+    parameters -
+    - image: image to be padded, 3d m x n x l np.ndarray
+    - extra_layers: layers to be added to each x/y edge, int
+    return -
+    - padded image, m x (n+2*extra_layers) x (l+2*extra_layers) np.ndarray
+
+    >>> a = pad(np.random.rand(1, 4, 4), 1)
+    >>> a.shape
+    (1, 6, 6)
+    """
+    assert len(image.shape) == 3, f'invalid input, expected 3d ndarray, given {image.shape}'
+    return np.pad(image, ((0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
+
+
+#### TESTING ####
+def test():
+    c = ConvLayer((3, 1, 2, 2), 'valid')
+    x = np.arange(16).reshape((1, 4, 4))
+    print(c.ff(x, True))
+    dE_dA = np.random.rand(3, 3, 3)
+    print([o.shape for o in c.backprop(dE_dA)])
+
+test()
