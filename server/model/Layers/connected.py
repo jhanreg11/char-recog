@@ -1,9 +1,5 @@
 import numpy as np
-
-
-def softmax(X):
-    exps = np.exp(X - np.max(X))
-    return exps / np.sum(exps)
+from activations import softmax
 
 
 class ConnectedLayer:
@@ -18,7 +14,7 @@ class ConnectedLayer:
 
     def __init__(self, input, output, activation=softmax, dropout=False):
         self.w = np.random.rand(output, input + 1)
-        self.activation = activation
+        self.activation = activation()
         self.cache = {'in': None, 'z': None, 'a': None}
         if activation is softmax:
             self.soft = True
@@ -50,7 +46,7 @@ class ConnectedLayer:
             X /= self.retain_chance
 
         z = self.w.dot(np.vstack([X, np.ones((1, 1))]))
-        a = self.activation(z)
+        a = self.activation.reg(z)
 
         # storing vals for backprop
         if cache:
@@ -72,7 +68,7 @@ class ConnectedLayer:
         if self.soft:
             dz = dE_da
         else:
-            dz = dE_da * self.activation(self.cache['z'], deriv=True)
+            dz = dE_da * self.activation.deriv(self.cache['z'], deriv=True)
         dw = dz.dot(np.vstack([self.cache['in'], np.ones((1, 1))]).T)
         dE_dIn = self.w[:, :-1].T.dot(dz)
         return dE_dIn, dw
@@ -80,20 +76,3 @@ class ConnectedLayer:
     def update(self, dw):
         """updates self.w, assumes that dw has already been multiplied by a learning rate and any other necessary constants."""
         self.w -= dw
-
-#### TESTING ####
-def test():
-    c = ConnectedLayer(2, 2)
-    x = np.random.rand(2, 1)
-    p = c.ff(x, True)
-    dE_dA = np.random.rand(2, 1)
-    dE_dIn, dw = c.backprop(dE_dA)
-    other_dw = dE_dA.dot(np.vstack([c.cache['in'], np.ones((1, 1))]).T)
-    other_dE_dIn = c.w[:, :-1].T.dot(dE_dA)
-    print(np.isclose(dw, other_dw), np.isclose(dE_dIn, other_dE_dIn))
-
-def dropout_test():
-    c = ConnectedLayer(2, 2, dropout=.5)
-    c.ff(np.random.rand(2, 1), True)
-    print(c.cache['in'], c.cache['a'])
-

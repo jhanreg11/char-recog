@@ -45,13 +45,3 @@ class MaxPoolLayer:
                     patch = X[i, start_row:end_row, start_col:end_col]
                     dE_dIn[i, start_row:end_row, start_col:end_col] += np.where(patch == a[i, j, k], patch, zero_patch[i])
         return dE_dIn
-
-#### TESTING ####
-def test():
-    m = MaxPoolLayer(3)
-    x = np.random.rand(5, 6, 6)
-    a = m.ff(x, True)
-    dE_dOut = np.random.rand(5, 2, 2)
-    dE_dIn = m.backprop(dE_dOut)
-    print(x, '\n', dE_dIn)
-
