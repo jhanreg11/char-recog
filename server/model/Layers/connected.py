@@ -1,5 +1,5 @@
 import numpy as np
-from activations import softmax
+from utils import softmax
 
 
 class ConnectedLayer:
@@ -10,9 +10,18 @@ class ConnectedLayer:
     - soft: whether the activation is softmax, bool
     - cache: cache to hold input and output of a ff step that is used in backprop, dict
     - retain_chance: chance that a neuron will not be disactivated during dropout, -1 if not dropout, float
+    - trainable: whether or not this layer can be trained, bool
     """
 
+    trainable = True
+
     def __init__(self, input, output, activation=softmax, dropout=False):
+        """parameters -
+        - input: dimensions of input into layer, int
+        - output: dimensions of output from layer, int
+        - activation: activation fn, function
+        - dropout: whether or not to implement dropout, bool if not, float representing percent of neurons to deactivate
+        if so"""
         self.w = np.random.rand(output, input + 1)
         self.activation = activation()
         self.cache = {'in': None, 'z': None, 'a': None}
@@ -53,6 +62,7 @@ class ConnectedLayer:
             self.cache['in'] = np.copy(X)
             self.cache['z'] = np.copy(z)
             self.cache['a'] = np.copy(a)
+        print('\nConnectedLayer\ninput:', X.shape,'\noutput:', a.shape)
         return a
 
     def backprop(self, dE_da):
@@ -71,8 +81,12 @@ class ConnectedLayer:
             dz = dE_da * self.activation.deriv(self.cache['z'], deriv=True)
         dw = dz.dot(np.vstack([self.cache['in'], np.ones((1, 1))]).T)
         dE_dIn = self.w[:, :-1].T.dot(dz)
+        print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient:', dw.shape)
         return dE_dIn, dw
 
     def update(self, dw):
-        """updates self.w, assumes that dw has already been multiplied by a learning rate and any other necessary constants."""
+        """updates self.w, assumes that dw has already been multiplied by a learning rate and any other necessary
+        constants.
+        parameters -
+        - dw: np.ndarray"""
         self.w -= dw

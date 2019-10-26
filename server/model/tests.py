@@ -2,6 +2,7 @@ import numpy as np
 from layers.connected import ConnectedLayer
 from layers.conv import ConvLayer
 from layers.maxpool import MaxPoolLayer
+from layers.flatten import FlattenLayer
 
 def dense_test():
     c = ConnectedLayer(2, 2)
@@ -32,3 +33,8 @@ def conv_test():
     print(c.ff(x, True))
     dE_dA = np.random.rand(3, 3, 3)
     print([o.shape for o in c.backprop(dE_dA)])
+
+def flatten_test():
+    f = FlattenLayer()
+    f.ff(np.random.rand(3, 5, 5), True)
+    print(f.backprop(np.random.rand(75, 1)).shape)
