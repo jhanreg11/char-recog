@@ -6,3 +6,4 @@ server/model/layers/__pycache__
 server/model/__pycache__
 .DS_Store
 .idea
+server/model/weights

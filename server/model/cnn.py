@@ -1,4 +1,4 @@
-import numpy as np, random, pickle
+import numpy as np, pickle, random
 from layers.connected import ConnectedLayer
 from layers.conv import ConvLayer
 from layers.maxpool import MaxPoolLayer
@@ -22,7 +22,7 @@ class LiteCNN:
             X = layer.ff(X, train)
         return X
 
-    def train(self, data, learning_rate, epochs, batch_size=0):
+    def train(self, data, learning_rate, epochs, batch_size=0, test=None):
         """trains cnn using gradient descent
         parameters -
         - data: training data, list of 2 item tuples
@@ -38,6 +38,18 @@ class LiteCNN:
                     self.batch_GD(data, learning_rate)
             else:
                 self.batch_GD(data, learning_rate)
+            if test and not i % 100:
+                tot_loss = 0
+                for x, y in test[:100]:
+                    tot_loss += self.loss_fn.reg(self.ff(x), y)
+                print(f'epoch {i} loss: {tot_loss}')
+            if not i % 100:
+                self.save_weights(i)
+        if test:
+            tot_loss = 0
+            for x, y in test:
+                tot_loss += self.loss_fn.reg(self.ff(x), y)
+            print(f'final loss: {tot_loss}')
 
     def batch_GD(self, data, learning_rate):
         """Performs full batch gradient descent over the whole data set provided
@@ -74,8 +86,14 @@ class LiteCNN:
             elif type(layer) == ConvLayer:
                 layer.update(learning_rate*gradients['df'+str(i)], learning_rate*gradients['db'+str(i)])
 
-    def save_weights(self, filename):
+    def save_weights(self, epoch):
         """saves weights/info of cnn to a .pkl file
         parameters  -
         - filename: name of file or file object, str or obj"""
-        raise NotImplementedError
+        with open('model/weights/model_%d' % epoch, 'wb') as file:
+            pickle.dump(self, file)
+
+    @staticmethod
+    def load_weights(epoch):
+        with open('model/weights/model_%d' % epoch, 'rb') as file:
+            return pickle.load(file)

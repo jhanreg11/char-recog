@@ -62,7 +62,7 @@ class ConnectedLayer:
             self.cache['in'] = np.copy(X)
             self.cache['z'] = np.copy(z)
             self.cache['a'] = np.copy(a)
-        print('\nConnectedLayer\ninput:', X.shape,'\noutput:', a.shape)
+        # print('\nConnectedLayer\ninput:', X.shape,'\noutput:', a.shape)
         return a
 
     def backprop(self, dE_da):
@@ -81,7 +81,7 @@ class ConnectedLayer:
             dz = dE_da * self.activation.deriv(self.cache['z'], deriv=True)
         dw = dz.dot(np.vstack([self.cache['in'], np.ones((1, 1))]).T)
         dE_dIn = self.w[:, :-1].T.dot(dz)
-        print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient:', dw.shape)
+        # print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient:', dw.shape)
         return dE_dIn, dw
 
     def update(self, dw):

@@ -62,7 +62,7 @@ class ConvLayer:
             self.cache['in'] = X.astype(np.float64)
             self.cache['z'] = conv_features
             self.cache['a'] = a
-        print('\nConvLayer\ninput:', X.shape,'\noutput:', a.shape)
+        # print('\nConvLayer\ninput:', X.shape,'\noutput:', a.shape)
         return a
 
     def backprop(self, dE_da):
@@ -93,7 +93,7 @@ class ConvLayer:
         # remove padding if necessary
         if self.mode == 'max':
             dE_dIn = dE_dIn[:, fshape[-1]-1:-fshape[-1]-1, fshape[-1]-1:fshape[-1]-1]
-        print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient filter:', dw.shape, '\ngradient bias:', db.shape)
+        # print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient filter:', dw.shape, '\ngradient bias:', db.shape)
         return dE_dIn, dw, db
 
     def update(self, gf, gb):

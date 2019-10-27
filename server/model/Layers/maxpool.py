@@ -31,7 +31,7 @@ class MaxPoolLayer:
         if cache:
             self.cache['in'] = X
             self.cache['out'] = pool_image
-        print('\nMaxpoolLayer\ninput:', X.shape,'\noutput:', pool_image.shape)
+        # print('\nMaxpoolLayer\ninput:', X.shape,'\noutput:', pool_image.shape)
         return pool_image
 
     def backprop(self, dE_dOut):
@@ -47,5 +47,5 @@ class MaxPoolLayer:
                     start_col = self.pool_size * k
                     patch_max_index = next(max_index)
                     dE_dIn[i, start_row+patch_max_index[0], start_col+patch_max_index[1]] = dE_dOut[i,j,k]
-        print('\nMaxpool backprop:\nInput:', dE_dIn.shape, '\nOutput:', dE_dOut.shape)
+        # print('\nMaxpool backprop:\nInput:', dE_dIn.shape, '\nOutput:', dE_dOut.shape)
         return dE_dIn

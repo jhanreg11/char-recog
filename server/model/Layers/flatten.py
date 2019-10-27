@@ -16,10 +16,10 @@ class FlattenLayer:
         if cache:
             self.cache['in'] = shape
             self.cache['out'] = ret.shape
-        print('\nFlattenLayer\ninput:', X.shape,'\noutput:', ret.shape)
+        # print('\nFlattenLayer\ninput:', X.shape,'\noutput:', ret.shape)
         return ret
 
     def backprop(self, dE_dOut):
         assert all([i == j for i, j in zip(dE_dOut.shape, self.cache['out'])]), 'invalid input'
-        print('\nFlattenLayer backprop:\nInput:', dE_dOut.shape, 'output:', dE_dOut.reshape(self.cache['in']).shape)
+        # print('\nFlattenLayer backprop:\nInput:', dE_dOut.shape, 'output:', dE_dOut.reshape(self.cache['in']).shape)
         return dE_dOut.reshape(self.cache['in'])
