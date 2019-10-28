@@ -7,3 +7,4 @@ server/model/__pycache__
 .DS_Store
 .idea
 server/model/weights
+server/nohup.out

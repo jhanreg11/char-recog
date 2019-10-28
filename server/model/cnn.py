@@ -57,6 +57,7 @@ class LiteCNN:
         - data: list of 2 item tuples representing input and expected output, list of np.ndarray tuples
         - learning_rate: learning rate, float"""
         gradients = {}
+        batch_size = len(data)
         for i, layer in enumerate(self.layers):
             if type(layer) == ConnectedLayer:
                 gradients['dw'+str(i)] = np.zeros_like(layer.w)
@@ -66,25 +67,29 @@ class LiteCNN:
 
         for x, y in data:
             pred = self.ff(x, True)
+            print('prediciton:', pred)
             dE_dA = self.loss_fn.deriv(pred, y)
             i = len(self.layers)-1
             for layer in reversed(self.layers):
                 if type(layer) == ConnectedLayer:
                     dE_dA, temp_grad = layer.backprop(dE_dA)
                     gradients['dw'+str(i)] += temp_grad
+                    # print('\ndE_dA:\n', dE_dA, '\ndw:\n', gradients['dw'+str(i)])
                 elif layer.trainable:
                     dE_dA, temp_grad, temp_grad1 = layer.backprop(dE_dA)
                     gradients['df'+str(i)] += temp_grad
                     gradients['db'+str(i)] += temp_grad1
+                    # print('\ndE_dA:\n', dE_dA, '\ndf:\n', gradients['df'+str(i)], '\ndb:\n', gradients['db'+str(i)])
                 else:
                     dE_dA = layer.backprop(dE_dA)
+                    # print('\ndE_dA:\n', dE_dA)
                 i -= 1
 
         for i, layer in enumerate(self.layers):
             if type(layer) == ConnectedLayer:
-                layer.update(learning_rate*gradients['dw'+str(i)])
+                layer.update(learning_rate*gradients['dw'+str(i)]/batch_size)
             elif type(layer) == ConvLayer:
-                layer.update(learning_rate*gradients['df'+str(i)], learning_rate*gradients['db'+str(i)])
+                layer.update(learning_rate*gradients['df'+str(i)]/batch_size, learning_rate*gradients['db'+str(i)]/batch_size)
 
     def save_weights(self, epoch):
         """saves weights/info of cnn to a .pkl file
