@@ -38,6 +38,7 @@ class LiteCNN:
                     self.batch_GD(data, learning_rate)
             else:
                 self.batch_GD(data, learning_rate)
+            print('epoch', i)
             if test and not i % 100:
                 tot_loss = 0
                 for x, y in test[:100]:
@@ -67,7 +68,7 @@ class LiteCNN:
 
         for x, y in data:
             pred = self.ff(x, True)
-            print('prediciton:', pred)
+            # print('prediciton:', pred)
             dE_dA = self.loss_fn.deriv(pred, y)
             i = len(self.layers)-1
             for layer in reversed(self.layers):

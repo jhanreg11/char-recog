@@ -30,7 +30,7 @@ for i in range(test_labels.shape[0]):
 cnn = LiteCNN([ConvLayer((7, 1, 5, 5)), ConvLayer((10, 7, 7, 7), 'valid'), MaxPoolLayer(3), FlattenLayer(), ConnectedLayer(640, 62, dropout=.15)], CrossEntropy())
 t = datetime.datetime.now()
 print('starting training')
-cnn.train(data, .05, 1,  2000, test_data)
+cnn.train(data, .05, 1000,  500, test_data)
 print(datetime.datetime.now() - t)
 with open('alpha_model.pkl', 'wb') as file:
     pickle.dump(cnn, file)
