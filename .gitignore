@@ -8,3 +8,5 @@ server/model/__pycache__
 .idea
 server/model/weights
 server/nohup.out
+server/matlab
+
