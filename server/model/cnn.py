@@ -31,21 +31,21 @@ class LiteCNN:
         - batch_size: size of each mini batch, performs full batch GD if 0, int
         """
         for i in range(epochs):
+            print('epoch', i)
             if batch_size:
                 random.shuffle(data)
                 batches = [data[j:j + batch_size] for j in range(0, len(data), batch_size)]
                 for b in batches:
-                    self.batch_GD(data, learning_rate)
+                    self.batch_GD(b, learning_rate)
             else:
                 self.batch_GD(data, learning_rate)
-            print('epoch', i)
-            if test and not i % 100:
+            self.save_weights(i)
+            if test and not i % 10:
                 tot_loss = 0
                 for x, y in test[:100]:
                     tot_loss += self.loss_fn.reg(self.ff(x), y)
                 print(f'epoch {i} loss: {tot_loss}')
-            if not i % 100:
-                self.save_weights(i)
+            self.save_weights(i)
         if test:
             tot_loss = 0
             for x, y in test:
@@ -57,15 +57,16 @@ class LiteCNN:
         parameters -
         - data: list of 2 item tuples representing input and expected output, list of np.ndarray tuples
         - learning_rate: learning rate, float"""
+        print('batch GD')
         gradients = {}
         batch_size = len(data)
+        print(batch_size)
         for i, layer in enumerate(self.layers):
             if type(layer) == ConnectedLayer:
                 gradients['dw'+str(i)] = np.zeros_like(layer.w)
             elif type(layer) == ConvLayer:
                 gradients['df'+str(i)] = np.zeros_like(layer.filters)
                 gradients['db'+str(i)] = np.zeros_like(layer.bias)
-
         for x, y in data:
             pred = self.ff(x, True)
             # print('prediciton:', pred)
@@ -84,6 +85,7 @@ class LiteCNN:
                 else:
                     dE_dA = layer.backprop(dE_dA)
                     # print('\ndE_dA:\n', dE_dA)
+
                 i -= 1
 
         for i, layer in enumerate(self.layers):
