@@ -9,4 +9,7 @@ server/model/__pycache__
 server/model/weights
 server/nohup.out
 server/matlab
-
+nohup.out
+training.out
+training.err
+vectorizing_cnn.pdf
