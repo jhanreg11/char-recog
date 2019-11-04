@@ -41,7 +41,7 @@ def conv_test():
 
 def vectorized_conv_test():
     c = ConvLayer((3, 3, 2, 2), 'valid', first_layer=True)
-    x = np.arange(375).reshape((5, 3, 5, 5))
+    x = np.random.rand(5, 3, 5, 5)
     print('vectorized output:\n', c.vectorized_ff(x), '\nnon vectorized output:\n')
     for i in range(5):
         print(c.ff(x[i]))
@@ -51,6 +51,6 @@ def flatten_test():
     f = FlattenLayer()
     f.ff(np.random.rand(3, 5, 5), True)
     print(f.backprop(np.random.rand(75, 1)).shape)
-    
+
 
 vectorized_conv_test()

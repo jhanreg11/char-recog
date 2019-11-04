@@ -54,8 +54,8 @@ class ConvLayer:
         for i in range(filter_number):
             conv_image = np.zeros((self.conv_dim, self.conv_dim))
             for j in range(image_channels):
-                conv_image += fftconvolve(X[j], np.rot90(self.filters[i, j], 2), self.mode) + self.bias[i]
-            conv_features[i] = conv_image
+                conv_image += fftconvolve(X[j], np.rot90(self.filters[i, j], 2, (0, 1)), self.mode)
+            conv_features[i] = conv_image + self.bias[i]
 
         a = self.activation.reg(conv_features)
 
@@ -89,11 +89,11 @@ class ConvLayer:
         filter_matrix = np.zeros((filter_dim[0], filter_length))
         for filter_number in range(filter_dim[0]):
             filter_matrix[filter_number] += self.filters[filter_number].reshape(filter_length)
-        print('\nfilter matrix:\n', filter_matrix, '\nbiases:\n', self.bias)
+        # print('\nfilter matrix:\n', filter_matrix, '\nbiases:\n', self.bias)
         return filter_matrix
 
     def vectorize_input(self, X):
-        print('mini batches:\n', X, '\nfilters:\n', self.filters)
+        # print('mini batches:\n', X, '\nfilters:\n', self.filters)
         input_dim = X.shape
         filter_dim = self.filters.shape
         self.conv_dim = input_dim[-1] - filter_dim[-1] + 1
@@ -113,7 +113,7 @@ class ConvLayer:
                     row_end = (image_channel + 1) * filter_dim[2] * filter_dim[3]
                     layer_input[row_start:row_end, col_start:col_end] += im2col_2d(X[image_number, image_channel],
                                                                                    (filter_dim[2], filter_dim[3]))
-        print('\nlayer input:\n', layer_input)
+       # print('\nlayer input:\n', layer_input)
         return layer_input
 
     def backprop(self, dE_da):
@@ -159,9 +159,7 @@ class ConvLayer:
 
 #### HELPER FUNCTIONS ####
 def convolve(image, feature, border='max'):
-
-    if border == 'max':
-        image = pad(image, feature.shape[-1]-1)
+    """Performs cross-correlation not convolution (doesn't flip feature)"""
 
     image_dim = np.array(image.shape)
     feature_dim = np.array(feature.shape)
@@ -170,6 +168,7 @@ def convolve(image, feature, border='max'):
     if np.any(target_dim < 1):
         target_dim = feature_dim - image_dim + 1
     target = np.zeros(target_dim)
+
     for row in range(target_dim[0]):
         start_row = row
         end_row = row + feature_dim[0]
@@ -179,6 +178,7 @@ def convolve(image, feature, border='max'):
             target[row,col] = np.sum(image[start_row:end_row, start_col:end_col]*feature)
 
     return target
+
 
 def fftconvolve(image, feature, border='max'):
     """2d convolution using fft
