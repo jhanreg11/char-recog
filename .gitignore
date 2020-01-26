@@ -1,9 +1,7 @@
 server/venv
-server/__pycache__
 server/char_data
 server/matlab.zip
-server/model/layers/__pycache__
-server/model/__pycache__
+*__pycache__
 .DS_Store
 .idea
 server/model/weights

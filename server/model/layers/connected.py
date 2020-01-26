@@ -42,8 +42,7 @@ class ConnectedLayer:
         parameters -
         - X: input into layer, mx1 np.ndarray
         - cache: whether to store info about this pass for backprop
-        return -
-        activated output, nx1 np.ndarray"""
+        return - activated output, nx1 np.ndarray"""
         assert X.shape[0] == self.w.shape[1] - 1, f'invalid dimensions, weights: {self.w.shape}, given input: {X.shape}'
 
         # applying dropout
@@ -63,7 +62,15 @@ class ConnectedLayer:
             self.cache['z'] = np.copy(z)
             self.cache['a'] = np.copy(a)
         # print('\nConnectedLayer\ninput:', X.shape,'\noutput:', a.shape)
+
         return a
+
+    def batch_ff(self, X, cache=False):
+        """performs batch feedforward for a full set of data
+        parameters -
+        - X: 2d np.ndarray with every column being an input into the layer"""
+        raise NotImplementedError
+
 
     def backprop(self, dE_da):
         """calculates derivative of w wrt to Error of network

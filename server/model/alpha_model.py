@@ -27,9 +27,12 @@ for i in range(test_labels.shape[0]):
     test_data.append((test_image, test_label))
 
 
-cnn = LiteCNN([ConvLayer((32, 1, 3, 3), 'valid'), MaxPoolLayer(2), ConvLayer((64, 32, 3, 3), 'valid'), MaxPoolLayer(2), FlattenLayer(), ConnectedLayer(1600, 512, dropout=.25), ConnectedLayer(512, 47, dropout=.25)], CrossEntropy())
+cnn = LiteCNN([ConvLayer((32, 1, 3, 3), 'valid'), MaxPoolLayer(2),
+               FlattenLayer(), ConnectedLayer(5408, 47, dropout=.25)],
+              CrossEntropy())
 print('starting training')
-cnn.train(data[:1000], .005, 10,  500, test_data)
+t = datetime.datetime.now()
+cnn.train(data[:100], .005, 10,  50, test_data)
 print(datetime.datetime.now() - t)
 with open('alpha_model.pkl', 'wb') as file:
     pickle.dump(cnn, file)

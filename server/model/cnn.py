@@ -40,11 +40,11 @@ class LiteCNN:
             else:
                 self.batch_GD(data, learning_rate)
             self.save_weights(i)
-            if test and not i % 10:
-                tot_loss = 0
-                for x, y in test[:100]:
-                    tot_loss += self.loss_fn.reg(self.ff(x), y)
-                print(f'epoch {i} loss: {tot_loss}')
+            # if test and not i % 10:
+            tot_loss = 0
+            for x, y in test[:100]:
+                tot_loss += self.loss_fn.reg(self.ff(x), y)
+            print(f'epoch {i} loss: {tot_loss}')
             self.save_weights(i)
         if test:
             tot_loss = 0
@@ -98,8 +98,9 @@ class LiteCNN:
         """saves weights/info of cnn to a .pkl file
         parameters  -
         - filename: name of file or file object, str or obj"""
-        with open('model/weights/model_%d' % epoch, 'wb') as file:
-            pickle.dump(self, file)
+        pass
+        # with open('model/weights/model_%d' % epoch, 'wb') as file:
+        #     pickle.dump(self, file)
 
     @staticmethod
     def load_weights(epoch):

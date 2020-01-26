@@ -20,7 +20,7 @@ class ConvLayer:
         if len(filters) == 3:
             filters = (filters[0], 1, filters[1], filters[2])
         self.filters = np.random.rand(filters[0], filters[1], filters[2], filters[3])
-        self.bias = np.random.rand(filters[0], 1) # created as column matrix for fully vectorized training
+        self.bias = np.random.rand(filters[0]) # created as column matrix for fully vectorized training
         self.mode = mode
         self.activation = activation()
         self.first_layer = first_layer
@@ -40,34 +40,61 @@ class ConvLayer:
         assert self.filters.shape[1] == X.shape[0], f'invalid input for convolution, expected:' \
             f'{self.filters.shape[1:]}, provided: {X.shape}'
 
+        if self.mode == 'max':
+            X = pad(X, self.filters.shape[-1]-1).astype(np.float64)   # pad image for max convolution
+
         filter_number = self.filters.shape[0]
         image_dim = X.shape[1]
         patch_dim = self.filters.shape[-1]
         image_channels = X.shape[0]
 
-        if self.mode == 'max':
-            self.conv_dim = image_dim + patch_dim - 1
-        elif self.mode == 'valid':
-            self.conv_dim = image_dim - patch_dim + 1
+        self.conv_dim = image_dim - patch_dim + 1
 
         conv_features = np.zeros((filter_number, self.conv_dim, self.conv_dim))
         for i in range(filter_number):
             conv_image = np.zeros((self.conv_dim, self.conv_dim))
             for j in range(image_channels):
-                conv_image += fftconvolve(X[j], np.rot90(self.filters[i, j], 2, (0, 1)), self.mode)
+                conv_image += convolve(X[j], self.filters[i, j], 'valid')
             conv_features[i] = conv_image + self.bias[i]
 
         a = self.activation.reg(conv_features)
 
         # storing info for backprop
         if cache:
-            self.cache['in'] = X.astype(np.float64)
+            self.cache['in'] = X
             self.cache['z'] = conv_features
             self.cache['a'] = a
         # print('\nConvLayer\ninput:', X.shape,'\noutput:', a.shape)
         return a
 
-    def vectorized_ff(self, X, cache=False):
+    def backprop(self, dE_da):
+        """calculates gradient of filters, biases, and inputs into layer
+        parameters -
+        - dE_da: gradient of error function wrt to activated output (a) of layer, 3d np.ndarray
+        return -
+        - dE_dIn: gradient of error wrt input (X), 3d np.ndarray
+        - dw: gradient of filters, 4d np.ndarray
+        - db: gradient of biases, 1d np.ndarray
+        """
+        X, z, a = self.cache['in'], self.cache['z'], self.cache['a']
+        fshape = self.filters.shape
+        dz = dE_da * self.activation.deriv(a)
+        db = dz.sum(axis=(1, 2))  # poss error
+
+        dw = np.zeros_like(self.filters)
+        dE_dIn = np.zeros_like(X).astype(np.float64)
+        for i in range(fshape[0]):
+            for j in range(fshape[1]):
+                dw[i, j] += convolve(X[j], dz[i], 'valid')
+                dE_dIn[j] += convolve(np.rot90(self.filters[i, j], 2, (0, 1)), dz[i], 'max')
+
+        # remove padding if necessary
+        if self.mode == 'max':
+            dE_dIn = dE_dIn[:, fshape[-1]:-(fshape[-1] - 1), fshape[-1]:-(fshape[-1] - 1)]
+        # print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient filter:', dw.shape, '\ngradient bias:', db.shape)
+        return dE_dIn, dw, db
+
+    def batch_ff(self, X, cache=False):
         """Fully vectorized feedforward for a batch of inputs
         parameters -
         - X: tensor of all input images, 4d np.ndarray num_images X image_channels X image_dim X image_dim
@@ -81,7 +108,7 @@ class ConvLayer:
 
         filter_matrix = self.vectorize_filters()
 
-        return filter_matrix.dot(X) + self.bias
+        return self.activation.reg(filter_matrix.dot(X) + self.bias)
 
     def vectorize_filters(self):
         filter_dim = self.filters.shape
@@ -116,41 +143,11 @@ class ConvLayer:
        # print('\nlayer input:\n', layer_input)
         return layer_input
 
-    def backprop(self, dE_da):
-        """calculates gradient of filters, biases, and inputs into layer
-        parameters -
-        - dE_da: gradient of error function wrt to activated output (a) of layer, 3d np.ndarray
-        return -
-        - dE_dIn: gradient of error wrt input (X), 3d np.ndarray
-        - dw: gradient of filters, 4d np.ndarray
-        - db: gradient of biases, 1d np.ndarray
-        """
-        X, z, a = self.cache['in'], self.cache['z'], self.cache['a']
-        fshape = self.filters.shape
-        dz = dE_da * self.activation.deriv(a)
-        db = dz.sum(axis=(1, 2))  # poss error
-
-        # add padding if necessary
-        if self.mode == 'max':
-            X = pad(X, fshape[-1] - 1)
-
-        dw = np.zeros_like(self.filters)
-        dE_dIn = np.zeros_like(X)
-        for i in range(fshape[0]):
-            for j in range(fshape[1]):
-                dw[i, j] += convolve(X[j], dz[i], 'valid')
-                dE_dIn[j] += convolve(np.rot90(self.filters[i, j], 2, (0, 1)), dz[i], 'max')
-
-        # remove padding if necessary
-        if self.mode == 'max':
-            dE_dIn = dE_dIn[:, fshape[-1] - 1:-fshape[-1] - 1, fshape[-1] - 1:fshape[-1] - 1]
-        # print('\nConnectedLayer backprop:\nInput:', dE_da.shape, '\ngradient filter:', dw.shape, '\ngradient bias:', db.shape)
-        return dE_dIn, dw, db
-
     def vectorized_backprop(self, dE_da):
         """calculates gradients of filters and inputs into layer for a full batch
         parameters -
         - dE_da: gradient of error wrt to activated output, """
+        raise NotImplementedError
 
     def update(self, gf, gb):
         self.filters -= gf
@@ -160,6 +157,9 @@ class ConvLayer:
 #### HELPER FUNCTIONS ####
 def convolve(image, feature, border='max'):
     """Performs cross-correlation not convolution (doesn't flip feature)"""
+
+    if border == 'max':
+        image = pad(image, feature.shape[-1]-1)
 
     image_dim = np.array(image.shape)
     feature_dim = np.array(feature.shape)
@@ -175,13 +175,16 @@ def convolve(image, feature, border='max'):
         for col in range(target_dim[1]):
             start_col = col
             end_col = col + feature_dim[1]
-            target[row,col] = np.sum(image[start_row:end_row, start_col:end_col]*feature)
-
+            try:
+                target[row,col] = np.sum(image[start_row:end_row, start_col:end_col]*feature)
+            except :
+                print(image[start_row:end_row, start_col:end_col], '\n\n', feature)
+                raise IndexError
     return target
 
 
 def fftconvolve(image, feature, border='max'):
-    """2d convolution using fft
+    """2d convolution using fft, inverts feature
     parameters -
     - image: image to be convolved, 2d nxn np.ndarray
     - feature: filter to convolve image with, 2d mxm np.ndarray
@@ -217,7 +220,8 @@ def pad(image, extra_layers):
     >>> a.shape
     (1, 6, 6)
     """
-    assert len(image.shape) == 3, f'invalid input, expected 3d ndarray, given {image.shape}'
+    if len(image.shape) == 2:
+        return np.pad(image, ((extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
     return np.pad(image, ((0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
 
 
