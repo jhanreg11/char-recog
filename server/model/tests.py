@@ -42,15 +42,15 @@ def conv_test():
 def vectorized_conv_ff_test():
     c = ConvLayer(2, 2)
     c.set_dim((2, 4, 4))
-    x = np.arange(64).reshape((2, 2, 4, 4))
+    x = np.arange(32).reshape((1, 2, 4, 4))
     print('input', x)
     corr = ConvLayer.cross_correlate
     filter1_output1 = corr(x[0, 0], c.w[0, 0]) + corr(x[0, 1], c.w[0, 1])
-    filter1_output2 = corr(x[1, 0], c.w[0, 0]) + corr(x[1, 1], c.w[0, 1])
+    # filter1_output2 = corr(x[1, 0], c.w[0, 0]) + corr(x[1, 1], c.w[0, 1])
     filter2_output1 = corr(x[0, 0], c.w[1, 0]) + corr(x[0, 1], c.w[1, 1])
-    filter2_output2 = corr(x[1, 0], c.w[1, 0]) + corr(x[1, 1], c.w[1, 1])
-    print('expected output', filter1_output1, filter1_output2, filter2_output1, filter2_output2)
-    print('actual output', c.ff(x))
+    # filter2_output2 = corr(x[1, 0], c.w[1, 0]) + corr(x[1, 1], c.w[1, 1])
+    print('expected output', filter1_output1, filter2_output1)
+    print('\nactual output\n', c.ff(x))
 
 vectorized_conv_ff_test()
 

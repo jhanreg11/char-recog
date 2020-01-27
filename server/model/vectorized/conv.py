@@ -28,13 +28,14 @@ class ConvLayer:
     self.cols_out = (self.cols_in - self.kernel_size + 2 * self.pad) // self.stride + 1
 
     self.w = np.random.rand(self.filter_num, self.channels_in, self.kernel_size, self.kernel_size)
-    self.b = np.zeros((self.filter_num, 1, 1, 1))
+    self.b = np.zeros((1, self.filter_num))
 
   def ff(self, X, training=False):
     batch_size = X.shape[0]
+    print(batch_size)
     X = pad(X, self.pad)
     out = np.zeros((batch_size, self.filter_num, self.rows_out, self.cols_out))
-
+    print(out.shape)
     for i in range(self.rows_out):
       start_row = i * self.stride
       end_row = start_row + self.kernel_size
@@ -42,15 +43,11 @@ class ConvLayer:
       for j in range(self.cols_out):
         start_col = j * self.stride
         end_col = start_col + self.kernel_size
-        # print(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w)
-        # raise ValueError
-        out[:, :, i, j] = np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w, axis=(2, 3, 4))
-
-    z = out + self.b
-    a = self.activation.reg(z)
+        out[:, :, i, j] = np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w, axis=(2, 3, 4)) + self.b
+    a = self.activation.reg(out)
 
     if training:
-      self.cache.update({'in': X, 'z': z, 'a': a})
+      self.cache.update({'in': X, 'z': out, 'a': a})
 
     return a
 
