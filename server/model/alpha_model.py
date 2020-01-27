@@ -5,7 +5,7 @@ from layers.maxpool import MaxPoolLayer
 from layers.flatten import FlattenLayer
 from cnn import LiteCNN
 from utils import CrossEntropy
-from emnist import extract_training_samples, extract_test_samples
+from mnist import train_images,
 import datetime
 
 images, labels = extract_training_samples('balanced')
@@ -32,7 +32,7 @@ cnn = LiteCNN([ConvLayer((32, 1, 3, 3), 'valid'), MaxPoolLayer(2),
               CrossEntropy())
 print('starting training')
 t = datetime.datetime.now()
-cnn.train(data[:100], .005, 10,  50, test_data)
+cnn.train(data[:100], .005, 10,  50)
 print(datetime.datetime.now() - t)
 with open('alpha_model.pkl', 'wb') as file:
     pickle.dump(cnn, file)

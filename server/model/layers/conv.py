@@ -1,7 +1,6 @@
 import numpy as np
 from utils import relu
 
-
 class ConvLayer:
     """Convolutional layer of a CNN
     Data members -
@@ -25,6 +24,9 @@ class ConvLayer:
         self.activation = activation()
         self.first_layer = first_layer
         self.cache = {'in': None, 'z': None, 'a': None}
+        self.pad = 0
+        if mode == 'max':
+            self.pad = filters[-1] - 1
 
     def ff(self, X, cache=False):
         """Forward pass
@@ -54,7 +56,7 @@ class ConvLayer:
         for i in range(filter_number):
             conv_image = np.zeros((self.conv_dim, self.conv_dim))
             for j in range(image_channels):
-                conv_image += convolve(X[j], self.filters[i, j], 'valid')
+                conv_image += fft_cross_correlate(X[j], self.filters[i, j], 'valid')
             conv_features[i] = conv_image + self.bias[i]
 
         a = self.activation.reg(conv_features)
@@ -85,8 +87,8 @@ class ConvLayer:
         dE_dIn = np.zeros_like(X).astype(np.float64)
         for i in range(fshape[0]):
             for j in range(fshape[1]):
-                dw[i, j] += convolve(X[j], dz[i], 'valid')
-                dE_dIn[j] += convolve(np.rot90(self.filters[i, j], 2, (0, 1)), dz[i], 'max')
+                dw[i, j] += fft_cross_correlate(X[j], dz[i], 'valid')
+                dE_dIn[j] += fft_cross_correlate(np.rot90(self.filters[i, j], 2, (0, 1)), dz[i], 'max')
 
         # remove padding if necessary
         if self.mode == 'max':
@@ -102,7 +104,7 @@ class ConvLayer:
         return -
         - a: activation tensor representing output of all samples"""
         if self.mode == 'max':
-            X = pad(X, self.filters.shape[-1])
+            X = pad(X, self.filters.shape[-1] - 1)
 
         X = self.vectorize_input(X)
 
@@ -112,10 +114,12 @@ class ConvLayer:
 
     def vectorize_filters(self):
         filter_dim = self.filters.shape
-        filter_length = filter_dim[1]*filter_dim[2]*filter_dim[3]
-        filter_matrix = np.zeros((filter_dim[0], filter_length))
+        matrix_rows = filter_dim[0]
+        matrix_cols = filter_dim[1]*filter_dim[2]*filter_dim[3]
+        filter_matrix = np.zeros((matrix_rows, matrix_cols))
+
         for filter_number in range(filter_dim[0]):
-            filter_matrix[filter_number] += self.filters[filter_number].reshape(filter_length)
+            filter_matrix[filter_number] += self.filters[filter_number].reshape(matrix_cols)
         # print('\nfilter matrix:\n', filter_matrix, '\nbiases:\n', self.bias)
         return filter_matrix
 
@@ -155,7 +159,7 @@ class ConvLayer:
 
 
 #### HELPER FUNCTIONS ####
-def convolve(image, feature, border='max'):
+def cross_correlate(image, feature, border='max'):
     """Performs cross-correlation not convolution (doesn't flip feature)"""
 
     if border == 'max':
@@ -183,7 +187,7 @@ def convolve(image, feature, border='max'):
     return target
 
 
-def fftconvolve(image, feature, border='max'):
+def fft_cross_correlate(image, feature, border='max'):
     """2d convolution using fft, inverts feature
     parameters -
     - image: image to be convolved, 2d nxn np.ndarray
@@ -191,7 +195,7 @@ def fftconvolve(image, feature, border='max'):
     - border: border mode, str
     return -
     - target: convolution output, 2d np.ndarray"""
-
+    image = np.rot90(image, 2, (0, 1))
     image_dim = np.array(image.shape)
     feature_dim = np.array(feature.shape)
     target_dim = image_dim + feature_dim - 1
@@ -222,8 +226,10 @@ def pad(image, extra_layers):
     """
     if len(image.shape) == 2:
         return np.pad(image, ((extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
-    return np.pad(image, ((0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
-
+    elif len(image.shape) == 3:
+        return np.pad(image, ((0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
+    else:
+        return np.pad(image, ((0, 0), (0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
 
 def im2col_2d(X, patch_size, stepsize=1):
     """Matlab's im2col function implemented using broadcasting for efficiency. turns a 2d input image into another 2d

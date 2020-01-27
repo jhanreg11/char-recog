@@ -1,6 +1,6 @@
 import numpy as np
 from layers.connected import ConnectedLayer
-from layers.conv import ConvLayer
+from vectorized.conv import ConvLayer
 from layers.maxpool import MaxPoolLayer
 from layers.flatten import FlattenLayer
 
@@ -39,18 +39,23 @@ def conv_test():
     print([o.shape for o in c.backprop(dE_dA)])
 
 
-def vectorized_conv_test():
-    c = ConvLayer((3, 3, 2, 2), 'valid', first_layer=True)
-    x = np.random.rand(5, 3, 5, 5)
-    print('vectorized output:\n', c.vectorized_ff(x), '\nnon vectorized output:\n')
-    for i in range(5):
-        print(c.ff(x[i]))
+def vectorized_conv_ff_test():
+    c = ConvLayer(2, 2)
+    c.set_dim((2, 4, 4))
+    x = np.arange(64).reshape((2, 2, 4, 4))
+    print('input', x)
+    corr = ConvLayer.cross_correlate
+    filter1_output1 = corr(x[0, 0], c.w[0, 0]) + corr(x[0, 1], c.w[0, 1])
+    filter1_output2 = corr(x[1, 0], c.w[0, 0]) + corr(x[1, 1], c.w[0, 1])
+    filter2_output1 = corr(x[0, 0], c.w[1, 0]) + corr(x[0, 1], c.w[1, 1])
+    filter2_output2 = corr(x[1, 0], c.w[1, 0]) + corr(x[1, 1], c.w[1, 1])
+    print('expected output', filter1_output1, filter1_output2, filter2_output1, filter2_output2)
+    print('actual output', c.ff(x))
 
+vectorized_conv_ff_test()
 
 def flatten_test():
     f = FlattenLayer()
     f.ff(np.random.rand(3, 5, 5), True)
     print(f.backprop(np.random.rand(75, 1)).shape)
 
-
-vectorized_conv_test()
