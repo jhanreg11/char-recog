@@ -27,15 +27,15 @@ class ConvLayer:
     self.rows_out = (self.rows_in - self.kernel_size + 2 * self.pad) // self.stride + 1
     self.cols_out = (self.cols_in - self.kernel_size + 2 * self.pad) // self.stride + 1
 
-    self.w = np.random.rand(self.filter_num, self.channels_in, self.kernel_size, self.kernel_size)
+    # self.w = np.random.rand(self.filter_num, self.channels_in, self.kernel_size, self.kernel_size)
+    self.w = np.ones((self.filter_num, self.channels_in, self.kernel_size, self.kernel_size))
     self.b = np.zeros((1, self.filter_num))
 
   def ff(self, X, training=False):
     batch_size = X.shape[0]
-    print(batch_size)
     X = pad(X, self.pad)
-    out = np.zeros((batch_size, self.filter_num, self.rows_out, self.cols_out))
-    print(out.shape)
+    z = np.zeros((batch_size, self.filter_num, self.rows_out, self.cols_out))
+
     for i in range(self.rows_out):
       start_row = i * self.stride
       end_row = start_row + self.kernel_size
@@ -43,13 +43,52 @@ class ConvLayer:
       for j in range(self.cols_out):
         start_col = j * self.stride
         end_col = start_col + self.kernel_size
-        out[:, :, i, j] = np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w, axis=(2, 3, 4)) + self.b
-    a = self.activation.reg(out)
+        z[:, :, i, j] = np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w, axis=(2, 3, 4)) + self.b
+
+    a = self.activation.reg(z)
 
     if training:
-      self.cache.update({'in': X, 'z': out, 'a': a})
+      self.cache.update({'X': X, 'z': z, 'a': a})
 
     return a
+
+  def backprop(self, da):
+    batch_size = da.shape[0]
+    X, z, a = (self.cache[key] for key in ('X', 'z', 'a'))
+    dIn = np.zeros((batch_size, self.channels_in, self.rows_in, self.cols_in))
+    dIn_pad = pad(dIn, self.pad) if self.pad else dIn
+
+    dz = da * self.activation.deriv(a)
+    db = 1 / batch_size * dz.sum(axis=(0, 2, 3))
+    dw = np.zeros_like(self.w)
+
+    for i in range(self.rows_out):
+      start_row = i * self.stride
+      end_row = start_row + self.kernel_size
+
+      for j in range(self.cols_out):
+        start_col = j * self.stride
+        end_col = start_col + self.kernel_size
+
+        dIn_pad[:, :, start_row:end_row, start_col:end_col] += np.sum(self.w[np.newaxis, :, :, :, :] * dz[:, :, np.newaxis, i:i+1, j:j+1], axis=1)
+        dw += np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * dz[:, :,np.newaxis, i:i+1, j:j+1], axis=0)
+
+    dw /= batch_size
+
+    if self.pad:
+      dIn = dIn_pad[:, :, self.pad:-self.pad, self.pad:-self.pad]
+
+    return dIn, dw, db
+
+  def seq_backprop(self, da):
+    batch_size = da.shape[0]
+    X, z, a = (self.cache[key] for key in ('X', 'z', 'a'))
+    dIn = np.zeros((batch_size, self.channels_in, self.rows_in, self.cols_in))
+    dIn_pad = pad(dIn, self.pad) if self.pad else dIn
+
+    dz = da * self.activation.deriv(a)
+    db = 1 / batch_size * dz.sum(axis=(0, 2, 3))
+    dw = np.zeros_like(self.w)
 
   @staticmethod
   def cross_correlate(image, feature, border='valid'):

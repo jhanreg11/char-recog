@@ -39,20 +39,33 @@ def conv_test():
     print([o.shape for o in c.backprop(dE_dA)])
 
 
-def vectorized_conv_ff_test():
+def vconv_ff_test():
     c = ConvLayer(2, 2)
-    c.set_dim((2, 4, 4))
-    x = np.arange(32).reshape((1, 2, 4, 4))
+    c.set_dim((1, 4, 4))
+    x = np.arange(32).reshape((2, 1, 4, 4))
     print('input', x)
     corr = ConvLayer.cross_correlate
-    filter1_output1 = corr(x[0, 0], c.w[0, 0]) + corr(x[0, 1], c.w[0, 1])
-    # filter1_output2 = corr(x[1, 0], c.w[0, 0]) + corr(x[1, 1], c.w[0, 1])
-    filter2_output1 = corr(x[0, 0], c.w[1, 0]) + corr(x[0, 1], c.w[1, 1])
-    # filter2_output2 = corr(x[1, 0], c.w[1, 0]) + corr(x[1, 1], c.w[1, 1])
-    print('expected output', filter1_output1, filter2_output1)
+    filter1_output1 = corr(x[0, 0], c.w[0, 0])
+    filter1_output2 = corr(x[1, 0], c.w[0, 0])
+    filter2_output1 = corr(x[0, 0], c.w[1, 0])
+    filter2_output2 = corr(x[1, 0], c.w[1, 0])
+    print('expected output', filter1_output1, '\n\n', filter2_output1, '\n\n', filter1_output2, '\n\n', filter2_output2)
     print('\nactual output\n', c.ff(x))
 
-vectorized_conv_ff_test()
+def vconv_back_test():
+    c = ConvLayer(2, 2)
+    c.set_dim((1, 4, 4))
+    x = np.arange(16).reshape((1, 1, 4, 4))
+    print('\ninput\n', x)
+
+    a = c.ff(x, True)
+    print('\nff output\n', a)
+
+    da = np.ones_like(a)
+    dIn, dw, db = c.backprop(da)
+    print('\ndw\n', dw, '\n\ndb\n', db, '\n\ndIn\n', dIn)
+
+vconv_back_test()
 
 def flatten_test():
     f = FlattenLayer()
