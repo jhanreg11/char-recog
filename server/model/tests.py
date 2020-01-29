@@ -72,7 +72,7 @@ def vconv_back_test():
     print('\ndw\n', dw, '\n\ndb\n', db, '\n\ndIn\n', dIn)
 
 def vpool_test():
-    p = PoolLayer(2)
+    p = PoolLayer(2, mode='avg')
     p.set_dim((2, 4, 4))
 
     x = np.random.rand(3, 2, 4, 4)

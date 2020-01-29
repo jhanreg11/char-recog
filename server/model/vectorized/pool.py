@@ -25,9 +25,9 @@ class PoolLayer:
       for j in range(self.cols_out):
         start_col = j * self.stride
         end_col = start_col + self.pool_size
+        X_slice = X[:, :, start_row:end_row, start_col:end_col]
 
         if self.mode == 'max':
-          X_slice = X[:, :, start_row:end_row, start_col:end_col]
           if training:
             self.cache_max(X_slice, (i, j))
           a[:, :, i, j] = np.max(X_slice, axis=(2, 3))
