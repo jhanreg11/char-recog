@@ -1,8 +1,55 @@
 import numpy as np
-from layers.connected import ConnectedLayer
-from vectorized.conv import ConvLayer
-from vectorized.pool import PoolLayer
+from layers.dense import DenseLayer
+from layers.conv import ConvLayer
+from layers.pool import PoolLayer
 from layers.flatten import FlattenLayer
+from utils import sigmoid, relu
+
+def cross_correlate(image, feature, border='valid'):
+  """Performs cross-correlation not convolution (doesn't flip feature)"""
+
+  if border == 'max':
+    image = pad(image, feature.shape[-1] - 1)
+
+  image_dim = np.array(image.shape)
+  feature_dim = np.array(feature.shape)
+
+  target_dim = image_dim - feature_dim + 1
+  if np.any(target_dim < 1):
+    target_dim = feature_dim - image_dim + 1
+  target = np.zeros(target_dim)
+
+  for row in range(target_dim[0]):
+    start_row = row
+    end_row = row + feature_dim[0]
+    for col in range(target_dim[1]):
+      start_col = col
+      end_col = col + feature_dim[1]
+      try:
+        target[row, col] = np.sum(image[start_row:end_row, start_col:end_col] * feature)
+      except:
+        print(image[start_row:end_row, start_col:end_col], '\n\n', feature)
+        raise IndexError
+  return target
+
+def pad(image, extra_layers):
+  """adds extra_layers rows/cols of zeros to image
+  parameters -
+  - image: image to be padded, 3d m x n x l np.ndarray
+  - extra_layers: layers to be added to each x/y edge, int
+  return -
+  - padded image, m x (n+2*extra_layers) x (l+2*extra_layers) np.ndarray
+
+  >>> a = pad(np.random.rand(1, 4, 4), 1)
+  >>> a.shape
+  (1, 6, 6)
+  """
+  if len(image.shape) == 2:
+    return np.pad(image, ((extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
+  elif len(image.shape) == 3:
+    return np.pad(image, ((0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
+  else:
+    return np.pad(image, ((0, 0), (0, 0), (extra_layers, extra_layers), (extra_layers, extra_layers)), 'constant')
 
 
 def dense_test():
@@ -59,17 +106,26 @@ def vconv_ff_test():
     print('\nactual output\n', c.ff(x))
 
 def vconv_back_test():
-    c = ConvLayer(2, 2)
-    c.set_dim((1, 4, 4))
-    x = np.arange(16).reshape((1, 1, 4, 4))
-    print('\ninput\n', x)
+    np.random.seed(1)
+    a_prev = np.random.randn(1, 1, 4, 4)
+    c = ConvLayer(1, 2, stride=1, mode='max')
+    c.set_dim(a_prev.shape[1:])
+    z = c.ff(a_prev, True)
+    print(z)
+    da, dw, db = c.backprop(z)
 
-    a = c.ff(x, True)
-    print('\nff output\n', a)
+    da_true = cross_correlate(np.rot90(c.w[0,0], 2, (0, 1)), z[0, 0], 'max')
+    if c.pad:
+      da_true = da_true[c.pad:-c.pad, c.pad:-c.pad]
+    dw_true = cross_correlate(pad(a_prev[0,0], c.pad), z[0, 0], 'valid')
+    db_true = z.sum(axis=(-2, -1))
 
-    da = np.ones_like(a)
-    dIn, dw, db = c.backprop(da)
-    print('\ndw\n', dw, '\n\ndb\n', db, '\n\ndIn\n', dIn)
+    print('\n\n', dw, '\n\n', dw_true)
+    np.testing.assert_almost_equal(np.mean(da), np.mean(da_true))
+    np.testing.assert_almost_equal(np.mean(dw), np.mean(dw_true))
+    np.testing.assert_almost_equal(np.mean(db), np.mean(db_true))
+
+vconv_back_test()
 
 def vpool_test():
     p = PoolLayer(2, mode='avg')
@@ -87,4 +143,39 @@ def vpool_test():
     dX = p.backprop(da)
     print('\ndX\n', dX)
 
-vpool_test()
+def vflatten_dense_test():
+    f = FlattenLayer()
+    f.set_dim((1, 4, 4))
+    a = f.ff(np.random.rand(3, 1, 4, 4), True)
+    print("\nflattened dense input\n", a.shape)
+
+    d = DenseLayer(5, dropout=True)
+    d.set_dim(a.shape[1])
+    out = d.ff(a, True)
+    print('\n\nDense output\n', out.shape)
+
+    da = np.random.rand(*out.shape)
+    dIn, dw, db = d.backprop(da)
+    print('\ndIn', dIn.shape == a.shape, '\ndw', dw.shape == d.w.shape, '\ndb', db.shape == d.b.shape)
+
+    print('flatten backprop', f.backprop(dIn).shape)
+
+
+def dense_test():
+  np.random.seed(2)
+  layer_size = 1
+  previous_layer_size = 3
+  a_prev = np.random.randn(previous_layer_size, 2)
+  w = np.random.randn(layer_size, previous_layer_size)
+  b = np.random.randn(layer_size, 1).reshape(1, layer_size)
+
+  fc_sigmoid = DenseLayer(3, sigmoid)
+  fc_relu = DenseLayer(3, relu)
+
+  fc_sigmoid.w = w
+  fc_sigmoid.b = b
+  fc_relu.w = w
+  fc_relu.b = b
+
+  np.testing.assert_array_almost_equal(fc_sigmoid.ff(a_prev.T, False), np.array([[0.96890023, 0.11013289]]).T)
+  np.testing.assert_array_almost_equal(fc_relu.ff(a_prev.T, False), np.array([[3.43896131, 0.]]).T)

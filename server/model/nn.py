@@ -1,7 +1,8 @@
 import numpy as np, pickle, random
+from utils import CrossEntropy
 
-class VCNN:
-  def __init__(self, input_dim, layers, loss):
+class NN:
+  def __init__(self, input_dim, layers, loss=CrossEntropy):
     self.layers = layers
     self.loss_fn = loss
 
@@ -9,7 +10,8 @@ class VCNN:
     for prev, curr in zip(self.layers, self.layers[1:]):
       curr.set_dim(prev.get_output_dim())
 
-    self.cache = {}
+    self.w_grads = {}
+    self.b_grads = {}
 
   def train(self, data, learning_rate, epochs, mini_batch_size=False, test=False):
     """
@@ -27,17 +29,18 @@ class VCNN:
       epoch_cost = 0
 
       if mini_batch_size:
-        batches = VCNN.create_mini_batches(data, mini_batch_size)
+        batches = NN.create_mini_batches(data, mini_batch_size)
       else:
-        batches = data
+        mini_batch_size = data[0].shape[0]
+        batches = [data]
 
       num_batches = len(batches)
       for i, mini_batch in enumerate(batches):
 
         epoch_cost += self.GD(data, learning_rate) / mini_batch_size
-        print(f'Progress {round(i / num_batches, 2)}')
+        print("\rProgress {:1.1%}".format((i+1) / num_batches), end="")
 
-      print(f'Cost after epoch:', epoch_cost)
+      print(f'\nCost after epoch:', epoch_cost)
 
       print('Testing against validation set...')
       accuracy = np.sum(np.argmax(self.ff(test[0]), axis=1) == test[1]) / test[0].shape[0]
@@ -53,8 +56,12 @@ class VCNN:
     :param learning_rate: float, learning rate.
     :return: None
     """
+    pred = self.ff(data[0], True)
+    self.backprop(pred, data[1])
+    self.update_params(learning_rate)
+    return self.loss_fn.reg(pred, data[1])
 
-  def ff(self, data, training):
+  def ff(self, X, training=False):
     """
     vectorized ff for multiple samples.
     :param data: np.ndarray, (num samples, sample channels, sample height, sample width)
@@ -62,5 +69,48 @@ class VCNN:
     :return: np.ndarray, output from forward pass.
     """
     for layer in self.layers:
-      X = layer.vff(X, training)
+      X = layer.ff(X, training)
     return X
+
+  def backprop(self, pred, y):
+    da = self.loss_fn.deriv(pred, y)
+    batch_size = da.shape[0]
+
+    for layer in reversed(self.layers):
+      da, dw, db = layer.backprop(da)
+
+      if layer.trainable:
+        self.w_grads[layer] = dw
+        self.b_grads[layer] = db
+
+  def update_params(self, learning_rate):
+    trainable_layers = [l for l in self.layers if l.trainable]
+    for layer in trainable_layers:
+      layer.w -= self.w_grads[layer] * learning_rate
+      layer.b -= self.b_grads[layer] * learning_rate
+
+  @staticmethod
+  def create_mini_batches(data, size):
+    x, y = data
+    batch_size = x.shape[0]
+
+    mini_batches = []
+
+    p = np.random.permutation(x.shape[0])
+    x, y = x[p, :], y[p, :]
+    complete_mini_batches = batch_size // size
+
+    for i in range(0, complete_mini_batches):
+      mini_batches.append((
+        x[i * size : (i + 1) * size, :],
+        y[i * size : (i + 1) * size, :]
+      ))
+
+    if batch_size % size:
+      mini_batches.append((
+        x[complete_mini_batches * size :, :],
+        y[complete_mini_batches * size :, :],
+      ))
+
+    return mini_batches
+

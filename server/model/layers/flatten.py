@@ -1,25 +1,22 @@
 import numpy as np
+from functools import reduce
 
 class FlattenLayer:
+  trainable = False
 
-    trainable = False
+  def __init__(self):
+    self.original_dim = None
+    self.output_dim = None
 
-    def __init__(self):
-        self.cache = {'in': None, 'out': None}
+  def set_dim(self, input_dim):
+    self.original_dim = input_dim
+    self.output_dim = reduce(lambda x, y: x * y, self.original_dim)
 
-    def ff(self, X, cache=False):
-        shape = X.shape
-        tot = 1
-        for i in shape:
-            tot *= i
-        ret = X.reshape((tot, 1))
-        if cache:
-            self.cache['in'] = shape
-            self.cache['out'] = ret.shape
-        # print('\nFlattenLayer\ninput:', X.shape,'\noutput:', ret.shape)
-        return ret
+  def ff(self, X, training=False):
+    return X.reshape(X.shape[0], -1)
 
-    def backprop(self, dE_dOut):
-        assert all([i == j for i, j in zip(dE_dOut.shape, self.cache['out'])]), 'invalid input'
-        # print('\nFlattenLayer backprop:\nInput:', dE_dOut.shape, 'output:', dE_dOut.reshape(self.cache['in']).shape)
-        return dE_dOut.reshape(self.cache['in'])
+  def backprop(self, da):
+    return da.reshape(da.shape[0], *self.original_dim), None, None
+
+  def get_output_dim(self):
+    return self.output_dim

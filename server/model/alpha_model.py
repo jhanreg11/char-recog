@@ -1,38 +1,45 @@
-import numpy as np, pickle
-from layers.connected import ConnectedLayer
+from nn import NN
 from layers.conv import ConvLayer
-from layers.maxpool import MaxPoolLayer
+from layers.pool import PoolLayer
 from layers.flatten import FlattenLayer
-from cnn import LiteCNN
-from utils import CrossEntropy
-from mnist import train_images,
-import datetime
-
-images, labels = extract_training_samples('balanced')
-test_images, test_labels = extract_test_samples('balanced')
-data = []
-test_data = []
-
-for i in range(labels.shape[0]):
-    image = images[i].reshape((1, 28, 28))
-    # create a one-hot vector based on which char for each label
-    label = np.zeros((47, 1))
-    label[int(labels[i]), 0] = 1.0
-    data.append((image, label))
-
-for i in range(test_labels.shape[0]):
-    test_image = images[i].reshape((1, 28, 28))
-    test_label = np.zeros((47, 1))
-    test_label[int(test_labels[i]), 0] = 1.0
-    test_data.append((test_image, test_label))
+from layers.dense import DenseLayer
+from utils import relu
+import numpy as np
+import mnist
 
 
-cnn = LiteCNN([ConvLayer((32, 1, 3, 3), 'valid'), MaxPoolLayer(2),
-               FlattenLayer(), ConnectedLayer(5408, 47, dropout=.25)],
-              CrossEntropy())
-print('starting training')
-t = datetime.datetime.now()
-cnn.train(data[:100], .005, 10,  50)
-print(datetime.datetime.now() - t)
-with open('alpha_model.pkl', 'wb') as file:
-    pickle.dump(cnn, file)
+def one_hot(x, num_classes=10):
+  out = np.zeros((x.shape[0], num_classes))
+  out[np.arange(x.shape[0]), x[:, 0]] = 1
+  return out
+
+def preprocess():
+  train_images = mnist.train_images().astype(np.float32)
+  train_images = train_images.reshape((train_images.shape[0], 1, 28, 28))
+  train_images /= 255
+
+  train_labels = mnist.train_labels()
+  train_labels = one_hot(train_labels.reshape(train_labels.shape[0], 1))
+
+  test_images = mnist.test_images().astype(np.float32)
+  test_images = test_images.reshape((test_images.shape[0], 1, 28, 28))
+  test_images /= 255
+
+  test_labels = mnist.test_labels()
+
+  return (train_images[:100], train_labels[:100]), (train_images[:10], train_labels[:10])
+
+cnn = NN(
+  input_dim=(1, 28, 28),
+  layers=[
+    ConvLayer(32, 5),
+    PoolLayer(2, 2),
+    FlattenLayer(),
+    DenseLayer(128, activation=relu, dropout=.75),
+    DenseLayer(10, dropout=.9)
+  ]
+)
+
+train_data, test_data = preprocess()
+
+cnn.train(train_data, .01, 10, 10, test_data)
