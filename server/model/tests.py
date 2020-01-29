@@ -1,7 +1,7 @@
 import numpy as np
 from layers.connected import ConnectedLayer
 from vectorized.conv import ConvLayer
-from layers.maxpool import MaxPoolLayer
+from vectorized.pool import PoolLayer
 from layers.flatten import FlattenLayer
 
 
@@ -38,6 +38,12 @@ def conv_test():
     dE_dA = np.random.rand(3, 3, 3)
     print([o.shape for o in c.backprop(dE_dA)])
 
+def flatten_test():
+    f = FlattenLayer()
+    f.ff(np.random.rand(3, 5, 5), True)
+    print(f.backprop(np.random.rand(75, 1)).shape)
+
+#######################################
 
 def vconv_ff_test():
     c = ConvLayer(2, 2)
@@ -65,10 +71,20 @@ def vconv_back_test():
     dIn, dw, db = c.backprop(da)
     print('\ndw\n', dw, '\n\ndb\n', db, '\n\ndIn\n', dIn)
 
-vconv_back_test()
+def vpool_test():
+    p = PoolLayer(2)
+    p.set_dim((2, 4, 4))
 
-def flatten_test():
-    f = FlattenLayer()
-    f.ff(np.random.rand(3, 5, 5), True)
-    print(f.backprop(np.random.rand(75, 1)).shape)
+    x = np.random.rand(3, 2, 4, 4)
+    print('\ninput\n', x)
 
+    a = p.ff(x, True)
+    print('\noutput\n', a)
+
+    da = np.random.rand(*a.shape)
+    print('\ndA\n', da)
+
+    dX = p.backprop(da)
+    print('\ndX\n', dX)
+
+vpool_test()

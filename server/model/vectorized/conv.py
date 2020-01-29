@@ -1,7 +1,10 @@
 import numpy as np
 from utils import relu
 
+
 class ConvLayer:
+  trainable = True
+
   def __init__(self, filter_num, kernel_size, mode='valid', stride=1, activation=relu):
     self.filter_num = filter_num
     self.kernel_size = kernel_size
@@ -27,8 +30,8 @@ class ConvLayer:
     self.rows_out = (self.rows_in - self.kernel_size + 2 * self.pad) // self.stride + 1
     self.cols_out = (self.cols_in - self.kernel_size + 2 * self.pad) // self.stride + 1
 
-    # self.w = np.random.rand(self.filter_num, self.channels_in, self.kernel_size, self.kernel_size)
-    self.w = np.ones((self.filter_num, self.channels_in, self.kernel_size, self.kernel_size))
+    self.w = np.random.rand(self.filter_num, self.channels_in, self.kernel_size, self.kernel_size)
+    # self.w = np.ones((self.filter_num, self.channels_in, self.kernel_size, self.kernel_size))
     self.b = np.zeros((1, self.filter_num))
 
   def ff(self, X, training=False):
@@ -43,7 +46,9 @@ class ConvLayer:
       for j in range(self.cols_out):
         start_col = j * self.stride
         end_col = start_col + self.kernel_size
-        z[:, :, i, j] = np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w, axis=(2, 3, 4)) + self.b
+
+        z[:, :, i, j] = np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * self.w,
+                               axis=(2, 3, 4)) + self.b
 
     a = self.activation.reg(z)
 
@@ -70,8 +75,10 @@ class ConvLayer:
         start_col = j * self.stride
         end_col = start_col + self.kernel_size
 
-        dIn_pad[:, :, start_row:end_row, start_col:end_col] += np.sum(self.w[np.newaxis, :, :, :, :] * dz[:, :, np.newaxis, i:i+1, j:j+1], axis=1)
-        dw += np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * dz[:, :,np.newaxis, i:i+1, j:j+1], axis=0)
+        dIn_pad[:, :, start_row:end_row, start_col:end_col] += np.sum(
+          self.w[np.newaxis, :, :, :, :] * dz[:, :, np.newaxis, i:i + 1, j:j + 1], axis=1)
+        dw += np.sum(X[:, np.newaxis, :, start_row:end_row, start_col:end_col] * dz[:, :, np.newaxis, i:i + 1, j:j + 1],
+                     axis=0)
 
     dw /= batch_size
 
@@ -167,4 +174,3 @@ def im2col_2d(X, patch_size, stepsize=1):
 
   # Get all actual indices & index into input array for final output
   return np.take(X, start_idx.ravel()[:, None] + offset_idx.ravel()[::stepsize])
-
