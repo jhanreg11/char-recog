@@ -1,78 +1,43 @@
+$(document).ready(function() {
+  let canvas = document.getElementById('drawing-field')
+  let ctx = canvas.getContext('2d')
 
-//////CANVAS DRAWING
-var canvas, ctx,
-  brush = {
-    x: 0,
-    y: 0,
-    color: '#000000',
-    size: 8,
-    down: false
-  },
-  strokes = [],
-  currentStroke = null
+  let painting = document.getElementById('paint');
+  let paint_style = getComputedStyle(painting);
+  canvas.width = parseInt(paint_style.getPropertyValue('width'));
+  canvas.height = parseInt(paint_style.getPropertyValue('height'));
 
-function redraw() {
-  ctx.clearRect(0, 0, canvas.width(), canvas.height())
-  ctx.lineCap = 'round'
-  for (var i = 0; i < strokes.length; i++) {
-    var s = strokes[i]
-    ctx.strokeStyle = s.color
-    ctx.lineWidth = s.size
-    ctx.beginPath()
-    ctx.moveTo(s.points[0].x, s.points[0].y)
-    for (var j = 0; j < s.points.length; j++) {
-      var p = s.points[j]
-      ctx.lineTo(p.x, p.y)
-    }
-    ctx.stroke()
-  }
-}
+  let mouse = {x: 0, y: 0};
 
-function init() {
-  canvas = $('#drawing-field')
-  ctx = canvas[0].getContext('2d')
-  function mouseEvent (e) {
-    offset = $('#drawing-field').offset()
-    brush.x = e.pageX - offset.left
-    brush.y = e.pageY - offset.top
-    currentStroke.points.push({
-      x: brush.x,
-      y: brush.y
-    })
+  canvas.addEventListener('mousemove', function(e) {
+    mouse.x = e.pageX - this.offsetLeft;
+    mouse.y = e.pageY - this.offsetTop;
+  }, false);
 
-    redraw()
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#00CC99';
+
+  canvas.addEventListener('mousedown', function(e) {
+      ctx.beginPath();
+      ctx.moveTo(mouse.x, mouse.y);
+
+      canvas.addEventListener('mousemove', onPaint, false);
+  }, false);
+
+  canvas.addEventListener('mouseup', function() {
+      canvas.removeEventListener('mousemove', onPaint, false);
+  }, false);
+
+  let onPaint = function() {
+      ctx.lineTo(mouse.x, mouse.y);
+      ctx.stroke();
+  };
+
+  function getChar() {
+
   }
 
-  canvas.mousedown(function (e) {
-    brush.down = true
-
-    currentStroke = {
-      color: brush.color,
-      size: brush.size,
-      points: []
-    }
-
-    strokes.push(currentStroke)
-
-    mouseEvent(e)
-  }).mouseup(function (e) {
-    brush.down = false
-
-    mouseEvent(e)
-
-    currentStroke = null
-  }).mousemove(function (e) {
-    if (brush.down)
-      mouseEvent(e)
-  }).mouseleave(function (e) {
-    brush.down = false
-  })
-}
-
-$(init)
-
-
-
-/////PREDICTION PREPROCESSING
-offset = $('#drawing-field').offset()
-var imgData = ctx.getImageData(offset.left, offset.top, canvas.width(), canvas.height())
+  $('#predict').click(getChar)
+})

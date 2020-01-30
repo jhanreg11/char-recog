@@ -37,7 +37,7 @@ class NN:
       num_batches = len(batches)
       for i, mini_batch in enumerate(batches):
 
-        epoch_cost += self.GD(data, learning_rate) / mini_batch_size
+        epoch_cost += self.GD(mini_batch, learning_rate) / mini_batch_size
         print("\rProgress {:1.1%}".format((i+1) / num_batches), end="")
 
       print(f'\nCost after epoch:', epoch_cost)
@@ -113,4 +113,23 @@ class NN:
       ))
 
     return mini_batches
+
+  def save_weights(self, epoch=float('inf')):
+    """saves weights/info of cnn to a .pkl file
+    """
+    if epoch == float('inf'):
+      with open('model/weights/weights_final', 'wb') as file:
+        pickle.dump(self, file)
+    else:
+      with open('model/weights/weights_%d' % epoch, 'wb') as file:
+          pickle.dump(self, file)
+
+  @staticmethod
+  def load_weights(epoch=float('inf')):
+    if epoch == float('inf'):
+      with open('model/weights/model_%d' % epoch, 'rb') as file:
+        return pickle.load(file)
+    else:
+      with open('model/weights/model_%d' % epoch, 'rb') as file:
+            return pickle.load(file)
 

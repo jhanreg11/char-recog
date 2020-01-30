@@ -27,7 +27,7 @@ def preprocess():
 
   test_labels = mnist.test_labels()
 
-  return (train_images[:100], train_labels[:100]), (train_images[:10], train_labels[:10])
+  return (train_images, train_labels), (test_images[:100], test_labels[:100])
 
 cnn = NN(
   input_dim=(1, 28, 28),
@@ -42,4 +42,5 @@ cnn = NN(
 
 train_data, test_data = preprocess()
 
-cnn.train(train_data, .01, 10, 10, test_data)
+cnn.train(train_data, .005, 10, 256, test_data)
+cnn.save_weights()
