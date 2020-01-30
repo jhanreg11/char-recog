@@ -24,6 +24,8 @@ class NN:
     :param test: tuple | bool, tuple in same structure as data if incremental testing is desired, false otherwise
     :return: None
     """
+
+    test_subset = (test[0][:150], test[1][:150]) if test else None
     for i in range(epochs):
       print('\n----------------------\nEpoch', i)
       epoch_cost = 0
@@ -41,12 +43,17 @@ class NN:
         print("\rProgress {:1.1%}".format((i+1) / num_batches), end="")
 
       print(f'\nCost after epoch:', epoch_cost)
-
-      print('Testing against validation set...')
-      accuracy = np.sum(np.argmax(self.ff(test[0]), axis=1) == test[1]) / test[0].shape[0]
+      self.save_weights(i)
+      print('Testing against subset of validation set...')
+      accuracy = np.sum(np.argmax(self.ff(test_subset[0]), axis=1) == test_subset[1]) / test_subset[0].shape[0]
       print(f'Accuracy on validation set: {accuracy}')
 
-    print('Done Training')
+    print('\nDone Training')
+
+    print('Testing against total validation set...')
+    accuracy =np.sum(np.argmax(self.ff(test[0]), axis=1) == test[1]) / test[0].shape[0]
+    print(f'Final accuracy on validation set: {accuracy}')
+    self.save_weights()
 
   def GD(self, data, learning_rate):
     """
@@ -118,18 +125,18 @@ class NN:
     """saves weights/info of cnn to a .pkl file
     """
     if epoch == float('inf'):
-      with open('model/weights/weights_final', 'wb') as file:
+      with open('weights/final.pkl', 'wb') as file:
         pickle.dump(self, file)
     else:
-      with open('model/weights/weights_%d' % epoch, 'wb') as file:
+      with open('weights/weights_%d' % epoch, 'wb') as file:
           pickle.dump(self, file)
 
   @staticmethod
   def load_weights(epoch=float('inf')):
     if epoch == float('inf'):
-      with open('model/weights/model_%d' % epoch, 'rb') as file:
+      with open('weights/final.pkl' % epoch, 'rb') as file:
         return pickle.load(file)
     else:
-      with open('model/weights/model_%d' % epoch, 'rb') as file:
+      with open('weights/weights_%d.pkl' % epoch, 'rb') as file:
             return pickle.load(file)
 

@@ -4,7 +4,7 @@ server/matlab.zip
 *__pycache__
 .DS_Store
 .idea
-server/model/weights
+server/model/weights/weights_*
 server/nohup.out
 server/matlab
 nohup.out

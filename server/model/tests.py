@@ -4,6 +4,7 @@ from layers.conv import ConvLayer
 from layers.pool import PoolLayer
 from layers.flatten import FlattenLayer
 from utils import sigmoid, relu
+from nn import NN
 
 def cross_correlate(image, feature, border='valid'):
   """Performs cross-correlation not convolution (doesn't flip feature)"""
@@ -125,8 +126,6 @@ def vconv_back_test():
     np.testing.assert_almost_equal(np.mean(dw), np.mean(dw_true))
     np.testing.assert_almost_equal(np.mean(db), np.mean(db_true))
 
-vconv_back_test()
-
 def vpool_test():
     p = PoolLayer(2, mode='avg')
     p.set_dim((2, 4, 4))
@@ -179,3 +178,20 @@ def dense_test():
 
   np.testing.assert_array_almost_equal(fc_sigmoid.ff(a_prev.T, False), np.array([[0.96890023, 0.11013289]]).T)
   np.testing.assert_array_almost_equal(fc_relu.ff(a_prev.T, False), np.array([[3.43896131, 0.]]).T)
+
+
+def pkl_test():
+  cnn = NN(
+    input_dim=(1, 28, 28),
+    layers=[
+      ConvLayer(32, 5),
+      PoolLayer(2, 2),
+      FlattenLayer(),
+      DenseLayer(128, activation=relu, dropout=.75),
+      DenseLayer(10, dropout=.9)
+    ]
+  )
+
+  cnn.save_weights()
+
+pkl_test()
