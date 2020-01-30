@@ -49,11 +49,11 @@ class NN:
       print(f'Accuracy on validation set: {accuracy}')
 
     print('\nDone Training')
-
+    self.save_weights()
     print('Testing against total validation set...')
     accuracy =np.sum(np.argmax(self.ff(test[0]), axis=1) == test[1]) / test[0].shape[0]
     print(f'Final accuracy on validation set: {accuracy}')
-    self.save_weights()
+
 
   def GD(self, data, learning_rate):
     """

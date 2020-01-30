@@ -40,4 +40,4 @@ cnn = NN(
 
 train_data, test_data = preprocess()
 
-cnn.train(train_data, .002, 30, 10, (test_data[0], test_data[1]))
+cnn.train(train_data, .002, 30, 256, (test_data[0], test_data[1]))
