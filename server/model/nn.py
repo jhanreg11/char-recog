@@ -26,8 +26,8 @@ class NN:
     """
 
     test_subset = (test[0][:150], test[1][:150]) if test else None
-    for i in range(epochs):
-      print('\n----------------------\nEpoch', i)
+    for e in range(epochs):
+      print('\n----------------------\nEpoch', e)
       epoch_cost = 0
 
       if mini_batch_size:
@@ -43,10 +43,13 @@ class NN:
         print("\rProgress {:1.1%}".format((i+1) / num_batches), end="")
 
       print(f'\nCost after epoch:', epoch_cost)
-      self.save_weights(i)
-      print('Testing against subset of validation set...')
-      accuracy = np.sum(np.argmax(self.ff(test_subset[0]), axis=1) == test_subset[1]) / test_subset[0].shape[0]
-      print(f'Accuracy on validation set: {accuracy}')
+
+      self.save_weights(e)
+
+      if test:
+        print('Testing against subset of validation set...')
+        accuracy = np.sum(np.argmax(self.ff(test_subset[0]), axis=1) == test_subset[1]) / test_subset[0].shape[0]
+        print(f'Accuracy on validation set: {accuracy}')
 
     print('\nDone Training')
     self.save_weights()
@@ -128,7 +131,7 @@ class NN:
       with open('weights/final.pkl', 'wb') as file:
         pickle.dump(self, file)
     else:
-      with open('weights/weights_%d' % epoch, 'wb') as file:
+      with open('weights/weights_%d.pkl' % epoch, 'wb') as file:
           pickle.dump(self, file)
 
   @staticmethod

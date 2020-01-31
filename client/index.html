@@ -6,8 +6,26 @@
       <script src="./js/index.js"></script>
   </head>
   <body>
+    <h1 id="title">JCNN</h1>
     <div id="instructions">Draw any character into field below and press predict!</div>
-    <div id="paint"><canvas id="drawing-field"></canvas></div>
-    <button id="predict">Predict</button>
+    <div id="sketch">
+            <canvas id="paint"></canvas>
+        </div>
+    <div id="result-container">
+        <div id="desc">You entered:&nbsp;</div>
+        <div id="result">&nbsp;</div>
+    </div>
+    <div id="buttons">
+        <button id="predict">Predict</button>
+        <button id="clear">Clear</button>
+    </div>
+    <div id="about">
+        <h1>ABOUT</h1>
+        <div id="about-body">This is an efficient implementation of a Convolutional Neural Network (CNN) including both
+            back and forward propagation, written using only NumPy. I built this project to gain a deep understanding of
+            the math behind CNNs, and to challenge myself more than I have before in Deep Learning. This demo uses a
+            model trained on the <a href="https://www.nist.gov/itl/products-and-services/emnist-dataset" target="_blank">EMNIST</a>
+            dataset to recognize 40 alphanumeric characters.</div>
+    </div>
   </body>
 </html>

@@ -1,11 +1,35 @@
-#drawing-field {
+@import url('https://fonts.googleapis.com/css?family=Ubuntu&display=swap');
+#sketch {
+  border: 5px solid black;
   height: 200px;
   width: 200px;
-  background: blue;
+  position: relative;
+  background: gray;
+}
+
+#tmp_canvas {
+  position: absolute;
+  left: 0px; right: 0;
+  bottom: 0; top: 0;
+  cursor: crosshair;
 }
 
 body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: #3E5635;
+  color: #F2EFEA;
+  font-family: 'Ubuntu', sans-serif;
+}
+
+#about {
+  padding-top: 1%;
+  text-align: center;
+  max-width: 900px;
+}
+
+#title {
+  font-size: 3em;
+  text-decoration: underline;
 }
