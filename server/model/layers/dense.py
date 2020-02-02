@@ -1,5 +1,5 @@
 import numpy as np
-from utils import softmax
+from server.model.utils import softmax
 
 class DenseLayer:
   trainable = True

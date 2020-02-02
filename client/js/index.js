@@ -1,3 +1,5 @@
+request = new Request()
+
 function clearDrawing() {
     var canvas = document.querySelector('#paint');
     var ctx = canvas.getContext('2d');
@@ -6,20 +8,29 @@ function clearDrawing() {
 
 function submitDrawing() {
     var canvas = document.querySelector('#paint');
-    imgURI = canvas.toDataURL('image/jpeg', .5)
-    console.log(imgURI)
-    // console.log("Submitting: " + imgStr);
-    $.getJSON($SCRIPT_ROOT + '/_do_ocr', {
-      imgURI:  imgURI,
-      index: index,
-      vocab: JSON.stringify(vocab),
+    let tmpCanvas = $('<canvas/>', {
+        id: 'resizeCanvas'
+    }).prop({
+        width: 28,
+        height: 28,
+    })
 
-    }, function(data) {
-      $('#result').text(data.result);
-      $('input[name=a]').focus().select();
-    });
-    document.getElementById("result").innerHTML = "Working...";
-    return false;
+    let newCanvas = $('<canvas>')
+      .attr("width", 28)
+      .attr("height", 28)
+
+    let newContext = newCanvas[0].getContext('2d')
+    newContext.scale(28 / canvas.width, 28 / canvas.height)
+    newContext.drawImage(canvas, 0, 0)
+
+    let imageData =newContext.getImageData(0, 0, 28, 28).data
+	  let bluePixels = Array.prototype.slice.call(imageData.slice(784 * 2, 784 * 3))
+
+    reqData = {pixels: bluePixels}
+    request.POST(reqData, '/classify', function(result) {
+        $('#result').html('Result: ' + result.result)
+    })
+    $('#result').html('Working...')
 }
 
 //Here is the main code for the paint window

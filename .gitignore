@@ -1,4 +1,4 @@
-server/venv
+*venv
 server/char_data
 server/matlab.zip
 *__pycache__

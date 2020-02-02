@@ -33,3 +33,7 @@ body {
   font-size: 3em;
   text-decoration: underline;
 }
+
+#result-container {
+  height: 1.3em;
+}

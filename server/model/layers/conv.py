@@ -1,5 +1,5 @@
 import numpy as np
-from utils import relu
+from server.model.utils import relu
 
 
 class ConvLayer:

@@ -1,12 +1,23 @@
-from server import app, db
+from server import app
 from flask import request, jsonify
-from datetime import datetime, timedelta
-from server.model.NN import NN
-from scipy.misc import imread
+from server.model.nn import NN
+import numpy as np
 
 cnn = NN.load_weights()
-
-@app.route('/api/classify', methods=['POST'])
+vocab = [c for c in '0123456789']
+print(len(vocab))
+@app.route('/classify', methods=['POST'])
 def classify():
-  data = request.data
-  im = imread
+  data = request.get_json(force=True)
+
+  nn_input = np.array(data['pixels']).reshape((1, 1, 28, 28)).astype(np.float32)
+  nn_input /= 255
+
+  out = cnn.ff(nn_input)
+  predicted_character = vocab[np.argmax(out)]
+
+  return jsonify({'result': predicted_character})
+
+@app.route('/health-check', methods=['POST', 'GET'])
+def health_check():
+  return 'I\'m alive'

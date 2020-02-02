@@ -3,6 +3,7 @@
   <head>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
       <link rel="stylesheet" type="text/css" href="./css/index.css">
+      <script src="./js/request.js"></script>
       <script src="./js/index.js"></script>
   </head>
   <body>
@@ -12,8 +13,7 @@
             <canvas id="paint"></canvas>
         </div>
     <div id="result-container">
-        <div id="desc">You entered:&nbsp;</div>
-        <div id="result">&nbsp;</div>
+        <div id="result"></div>
     </div>
     <div id="buttons">
         <button id="predict">Predict</button>
@@ -25,7 +25,8 @@
             back and forward propagation, written using only NumPy. I built this project to gain a deep understanding of
             the math behind CNNs, and to challenge myself more than I have before in Deep Learning. This demo uses a
             model trained on the <a href="https://www.nist.gov/itl/products-and-services/emnist-dataset" target="_blank">EMNIST</a>
-            dataset to recognize 40 alphanumeric characters.</div>
+            dataset to recognize alphanumeric characters. This demo currently supports digits 0-9, but morer characters
+            are coming soon!</div>
     </div>
   </body>
 </html>

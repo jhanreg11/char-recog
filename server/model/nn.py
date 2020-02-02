@@ -1,5 +1,5 @@
 import numpy as np, pickle, random
-from utils import CrossEntropy
+from server.model.utils import CrossEntropy
 
 class NN:
   def __init__(self, input_dim, layers, loss=CrossEntropy):
@@ -128,18 +128,18 @@ class NN:
     """saves weights/info of cnn to a .pkl file
     """
     if epoch == float('inf'):
-      with open('weights/final.pkl', 'wb') as file:
+      with open('server/model/weights/final.pkl', 'wb') as file:
         pickle.dump(self, file)
     else:
-      with open('weights/weights_%d.pkl' % epoch, 'wb') as file:
+      with open('server/model/weights/weights_%d.pkl' % epoch, 'wb') as file:
           pickle.dump(self, file)
 
   @staticmethod
   def load_weights(epoch=float('inf')):
     if epoch == float('inf'):
-      with open('weights/final.pkl' % epoch, 'rb') as file:
+      with open('server/model/weights/final.pkl', 'rb') as file:
         return pickle.load(file)
     else:
-      with open('weights/weights_%d.pkl' % epoch, 'rb') as file:
+      with open('server/model/weights/weights_%d.pkl' % epoch, 'rb') as file:
             return pickle.load(file)
 
