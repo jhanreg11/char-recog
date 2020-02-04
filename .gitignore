@@ -14,4 +14,4 @@ vectorizing_cnn.pdf
 temp.jpg
 server/model/tests.py
 server/model/old
-
+*.pyc

@@ -50,7 +50,16 @@ $(document).ready(function() {
         mouse.x = typeof e.offsetX !== 'undefined' ? e.offsetX : e.layerX;
         mouse.y = typeof e.offsetY !== 'undefined' ? e.offsetY : e.layerY;
     }, false);
-    
+
+    /* Touch Capturing Work */
+    tmp_canvas.addEventListener('touchmove', function(e) {
+        var touch = e.touches[0];
+        var mouseEvent = new MouseEvent("mousemove", {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        tmp_canvas.dispatchEvent(mouseEvent);
+    }, false);
     
     /* Drawing on Paint App */
     tmp_ctx.lineWidth = 30;
@@ -60,6 +69,7 @@ $(document).ready(function() {
     tmp_ctx.fillStyle = 'blue';
     
     tmp_canvas.addEventListener('mousedown', function(e) {
+        if (isScrolled()) return
         tmp_canvas.addEventListener('mousemove', onPaint, false);
         
         mouse.x = typeof e.offsetX !== 'undefined' ? e.offsetX : e.layerX;
@@ -70,6 +80,16 @@ $(document).ready(function() {
         onPaint();
     }, false);
     
+    tmp_canvas.addEventListener('touchstart', function(e) {
+        if (isScrolled()) return
+        var touch = e.touches[0];
+        var mouseEvent = new MouseEvent("mousedown", {
+          clientX: touch.clientX,
+          clientY: touch.clientY
+        });
+        tmp_canvas.dispatchEvent(mouseEvent);
+    }, false);
+
     tmp_canvas.addEventListener('mouseup', function() {
         tmp_canvas.removeEventListener('mousemove', onPaint, false);
         
@@ -81,7 +101,13 @@ $(document).ready(function() {
         // Emptying up Pencil Points
         ppts = [];
     }, false);
-    
+
+    tmp_canvas.addEventListener('touchend', function() {
+        console.log('up')
+        var mouseEvent = new MouseEvent("mouseup", {});
+        tmp_canvas.dispatchEvent(mouseEvent);
+    }, false);
+
     var onPaint = function() {
         
         // Saving all the points in an array
@@ -122,6 +148,17 @@ $(document).ready(function() {
         tmp_ctx.stroke();
         
     };
+
+    /*
+    Prevent ability to draw on canvas when scrolled down.
+    */
+    var isScrolled = function(e) {
+        // Give 5 pixels of buffer
+        if (window.pageYOffset > 5) {
+            window.scrollTo(0,0)
+            alert("Ensure you're not zoomed in!")
+        }
+    }
 
     $('#predict').click(submitDrawing)
     $('#clear').click(clearDrawing)

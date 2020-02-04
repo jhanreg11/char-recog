@@ -5,6 +5,7 @@
   width: 200px;
   position: relative;
   background: gray;
+  touch-action: none;
 }
 
 #tmp_canvas {
@@ -32,6 +33,7 @@ body {
 #title {
   font-size: 3em;
   text-decoration: underline;
+  margin-block-start: 5px;
 }
 
 #result-container {

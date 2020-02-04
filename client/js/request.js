@@ -3,9 +3,10 @@ Request = function() {
     //Production base url
     //var BASE_URL = 'https://jacob-hanson.com/trackIt/api/'
     //Local dev base url
-    var BASE_URL = 'http://127.0.0.1:8090'
+    var BASE_URL = 'https://jacob-hanson.com/char-recog/api'
 
     that.POST = function(req, path, completion) {
+	console.log(BASE_URL + path)
         $.ajax(BASE_URL + path, {
             data: JSON.stringify(req),
             type:'POST',
