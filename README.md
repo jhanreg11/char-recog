@@ -13,7 +13,7 @@ Install all requirements:
 pip install -r requirements.txt
 ```
 
-#To run the demo
+# To run the demo
 Start the debug server:
 ```python
 python3 run.py

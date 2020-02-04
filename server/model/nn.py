@@ -90,12 +90,12 @@ class NN:
     return X
 
   def backprop(self, pred, y):
-   """
+    """
     Propagates backward through network and stores gradients for all trainable parameters.
     :param pred: np.array, output of NN for whole batch
     :param y: np.array, expected output
     :return: None
-   """
+    """
     da = self.loss_fn.deriv(pred, y)
     batch_size = da.shape[0]
 
@@ -107,11 +107,11 @@ class NN:
         self.b_grads[layer] = db
 
   def update_params(self, learning_rate):
-   """
+    """
     Updates all trainable parameters.
     :param learning_rate: float, learning rate
     :return: None
-   """
+    """
     trainable_layers = [l for l in self.layers if l.trainable]
     for layer in trainable_layers:
       layer.w -= self.w_grads[layer] * learning_rate
