@@ -11,3 +11,6 @@ nohup.out
 training.out
 training.err
 vectorizing_cnn.pdf
+temp.jpg
+server/model/tests.py
+server/model/old

@@ -1,21 +1,22 @@
 from server import app
 from flask import request, jsonify
-from server.model.nn import NN
 import numpy as np
+from server.model.nn import NN
+from server.model.preprocessor import Preprocessor
 
 cnn = NN.load_weights()
 vocab = [c for c in '0123456789']
-print(len(vocab))
+prep = Preprocessor()
+
 @app.route('/classify', methods=['POST'])
 def classify():
-  data = request.get_json(force=True)
-
-  nn_input = np.array(data['pixels']).reshape((1, 1, 28, 28)).astype(np.float32)
-  nn_input /= 255
-
+  data = request.get_json(force=True)['imgURI']
+  nn_input = prep.preprocess(data)
   out = cnn.ff(nn_input)
   predicted_character = vocab[np.argmax(out)]
 
+  if np.max(out) < 0.15:
+    predicted_character = 'A scribble'
   return jsonify({'result': predicted_character})
 
 @app.route('/health-check', methods=['POST', 'GET'])

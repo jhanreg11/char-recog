@@ -3,12 +3,14 @@
   <head>
       <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
       <link rel="stylesheet" type="text/css" href="./css/index.css">
+      <link rel="icon" type="image/png" href="favicon.png"/>
       <script src="./js/request.js"></script>
       <script src="./js/index.js"></script>
   </head>
   <body>
     <h1 id="title">JCNN</h1>
-    <div id="instructions">Draw any character into field below and press predict!</div>
+    <div id="instructions">Draw any digit (0-9) into field below and press predict!</div>
+    <br>
     <div id="sketch">
             <canvas id="paint"></canvas>
         </div>
@@ -21,12 +23,17 @@
     </div>
     <div id="about">
         <h1>ABOUT</h1>
-        <div id="about-body">This is an efficient implementation of a Convolutional Neural Network (CNN) including both
-            back and forward propagation, written using only NumPy. I built this project to gain a deep understanding of
-            the math behind CNNs, and to challenge myself more than I have before in Deep Learning. This demo uses a
+        <div id="about-body">
+            In today's world of heavy duty machine learning frameworks and blackbox models lying around every corner,
+            I have found it easy to go a long time without truly understanding the math that makes all these algorithms work.
+            However, learning what goes on under the hood can be extremely useful when designing application models.
+            So I decided to take a closer look at deep learning models and implement some of them from scratch.
+            <br>
+            <br>
+            This is an efficient implementation of a Convolutional Neural Network (CNN) including both
+            back and forward propagation, written using only NumPy. This demo uses a
             model trained on the <a href="https://www.nist.gov/itl/products-and-services/emnist-dataset" target="_blank">EMNIST</a>
-            dataset to recognize alphanumeric characters. This demo currently supports digits 0-9, but morer characters
-            are coming soon!</div>
+            dataset, and currently supports digits 0-9. More characters are coming soon!</div>
     </div>
   </body>
 </html>

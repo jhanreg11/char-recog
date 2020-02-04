@@ -3,6 +3,12 @@ from server.model.utils import CrossEntropy
 
 class NN:
   def __init__(self, input_dim, layers, loss=CrossEntropy):
+    """
+    Create a neural network.
+    :param input_dim: 3-item iterable, dimensions of input sample
+    :param layers: list, every layer of neural network in order
+    :param loss: function, loss function
+    """
     self.layers = layers
     self.loss_fn = loss
 
@@ -26,7 +32,7 @@ class NN:
     """
 
     test_subset = (test[0][:150], test[1][:150]) if test else None
-    for e in range(epochs):
+    for e in range(33, 33 + epochs):
       print('\n----------------------\nEpoch', e)
       epoch_cost = 0
 
@@ -69,6 +75,7 @@ class NN:
     pred = self.ff(data[0], True)
     self.backprop(pred, data[1])
     self.update_params(learning_rate)
+    print(' ', self.loss_fn.reg(pred, data[1]), end="")
     return self.loss_fn.reg(pred, data[1])
 
   def ff(self, X, training=False):
@@ -83,6 +90,12 @@ class NN:
     return X
 
   def backprop(self, pred, y):
+   """
+    Propagates backward through network and stores gradients for all trainable parameters.
+    :param pred: np.array, output of NN for whole batch
+    :param y: np.array, expected output
+    :return: None
+   """
     da = self.loss_fn.deriv(pred, y)
     batch_size = da.shape[0]
 
@@ -94,6 +107,11 @@ class NN:
         self.b_grads[layer] = db
 
   def update_params(self, learning_rate):
+   """
+    Updates all trainable parameters.
+    :param learning_rate: float, learning rate
+    :return: None
+   """
     trainable_layers = [l for l in self.layers if l.trainable]
     for layer in trainable_layers:
       layer.w -= self.w_grads[layer] * learning_rate
@@ -101,6 +119,12 @@ class NN:
 
   @staticmethod
   def create_mini_batches(data, size):
+    """
+    create mini batches from 4d array containing dataset
+    :param data: np.array, dataset (num samples x num channels x width x height)
+    :param size: int, size of each mini batch.
+    :return: list, list of tuples (mini batch input, corresponding output)
+    """
     x, y = data
     batch_size = x.shape[0]
 
@@ -125,7 +149,9 @@ class NN:
     return mini_batches
 
   def save_weights(self, epoch=float('inf')):
-    """saves weights/info of cnn to a .pkl file
+    """
+    saves weights/info of nn to a .pkl file
+    :param: epoch: int, epoch to save file under, or inf if final model.
     """
     if epoch == float('inf'):
       with open('server/model/weights/final.pkl', 'wb') as file:
@@ -136,10 +162,14 @@ class NN:
 
   @staticmethod
   def load_weights(epoch=float('inf')):
+    """
+    loads model from .pkl file.
+    :param epoch: int, epoch to load model from, infinity if final model.
+    :return: NN, loaded model
+    """
     if epoch == float('inf'):
       with open('server/model/weights/final.pkl', 'rb') as file:
         return pickle.load(file)
     else:
       with open('server/model/weights/weights_%d.pkl' % epoch, 'rb') as file:
-            return pickle.load(file)
-
+        return pickle.load(file)

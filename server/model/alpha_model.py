@@ -38,8 +38,10 @@ cnn = NN(
   ]
 )
 
+cnn = NN.load_weights(32)
+cnn.layers[-1].retain_chance = 0.75
+cnn.layers[-2].retain_chance = 0.9
+
 train_data, test_data = preprocess()
 
-print(train_data[0][0])
-
-cnn.train(train_data, .001, 0, 256, (test_data[0], test_data[1]))
+cnn.train(train_data, .00001, 0, 128, test_data)

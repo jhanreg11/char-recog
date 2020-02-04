@@ -1,6 +1,5 @@
 import numpy as np
 
-
 #### ACTIVATIONS ####
 class softmax:
     @staticmethod
@@ -14,16 +13,14 @@ class softmax:
 
 
 class relu:
+    slope = .2
     @staticmethod
     def reg(X):
-        new = np.zeros_like(X)
-        return np.where(X > new, X, new)
+        return np.where(X > 0, X, X * relu.slope)
 
     @staticmethod
     def deriv(X):
-        X[X <= 0] = 0
-        X[X > 0] = 1
-        return X
+        return np.where(X > 0, 1, relu.slope)
 
 
 class sigmoid:

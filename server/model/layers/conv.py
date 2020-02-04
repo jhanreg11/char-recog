@@ -6,6 +6,14 @@ class ConvLayer:
   trainable = True
 
   def __init__(self, filter_num, kernel_size, mode='valid', stride=1, activation=relu):
+    """
+    Create a convolutional layer.
+    :param filter_num: int, number of filters
+    :param kernel_size: int, patch size for convolution.
+    :param mode: string, type of convolution ('valid' | 'max')
+    :param stride: int, number of steps to take between convolutions
+    :param activation: function, activation function
+    """
     self.filter_num = filter_num
     self.kernel_size = kernel_size
     self.w = None
@@ -35,6 +43,12 @@ class ConvLayer:
     self.b = np.zeros((1, self.filter_num))
 
   def ff(self, X, training=False):
+    """
+    Feed input forward.
+    :param X: np.array, input into layer
+    :param training: bool, whether or not to cache info for backprop.
+    :return: np.array, layer output
+    """
     batch_size = X.shape[0]
     X = pad(X, self.pad)
     z = np.zeros((batch_size, self.filter_num, self.rows_out, self.cols_out))
@@ -56,6 +70,13 @@ class ConvLayer:
     return a
 
   def backprop(self, da):
+    """
+    propagate error back through layer.
+    :param da: np.array, gradient of layer output wrt to cost function
+    :return dIn: np.array, gradient of layer input wrt to cost fn
+    :return dw: np.array, gradient of layer weights
+    :return db: np.array, gradient of bias
+    """
     batch_size = da.shape[0]
     X, z, a = (self.cache[key] for key in ('X', 'z', 'a'))
 
@@ -111,7 +132,6 @@ def pad(image, extra_layers):
 
 def cross_correlate(image, feature, border='valid'):
   """Performs cross-correlation not convolution (doesn't flip feature)"""
-
   if border == 'max':
     image = pad(image, feature.shape[-1] - 1)
 

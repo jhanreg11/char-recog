@@ -8,25 +8,10 @@ function clearDrawing() {
 
 function submitDrawing() {
     var canvas = document.querySelector('#paint');
-    let tmpCanvas = $('<canvas/>', {
-        id: 'resizeCanvas'
-    }).prop({
-        width: 28,
-        height: 28,
-    })
+    let imgURI = canvas.toDataURL('image/jpeg', 0.5)
 
-    let newCanvas = $('<canvas>')
-      .attr("width", 28)
-      .attr("height", 28)
+    reqData = {imgURI: imgURI}
 
-    let newContext = newCanvas[0].getContext('2d')
-    newContext.scale(28 / canvas.width, 28 / canvas.height)
-    newContext.drawImage(canvas, 0, 0)
-
-    let imageData =newContext.getImageData(0, 0, 28, 28).data
-	  let bluePixels = Array.prototype.slice.call(imageData.slice(784 * 2, 784 * 3))
-
-    reqData = {pixels: bluePixels}
     request.POST(reqData, '/classify', function(result) {
         $('#result').html('Result: ' + result.result)
     })
@@ -68,7 +53,7 @@ $(document).ready(function() {
     
     
     /* Drawing on Paint App */
-    tmp_ctx.lineWidth = 15;
+    tmp_ctx.lineWidth = 30;
     tmp_ctx.lineJoin = 'round';
     tmp_ctx.lineCap = 'round';
     tmp_ctx.strokeStyle = 'blue';
