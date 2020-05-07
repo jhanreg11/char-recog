@@ -48,20 +48,20 @@ class NN:
         epoch_cost += self.GD(mini_batch, learning_rate) / mini_batch_size
         print("\rProgress {:1.1%}".format((i+1) / num_batches), end="")
 
-      print(f'\nCost after epoch:', epoch_cost)
+      print('\nCost after epoch:', epoch_cost)
 
       self.save_weights(e)
 
       if test:
         print('Testing against subset of validation set...')
         accuracy = np.sum(np.argmax(self.ff(test_subset[0]), axis=1) == test_subset[1]) / test_subset[0].shape[0]
-        print(f'Accuracy on validation set: {accuracy}')
+        print('Accuracy on validation set: {}'.format(accuracy))
 
     print('\nDone Training')
     self.save_weights()
     print('Testing against total validation set...')
     accuracy =np.sum(np.argmax(self.ff(test[0]), axis=1) == test[1]) / test[0].shape[0]
-    print(f'Final accuracy on validation set: {accuracy}')
+    print('Final accuracy on validation set: {}'.format(accuracy))
 
 
   def GD(self, data, learning_rate):
