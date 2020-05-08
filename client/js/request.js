@@ -3,7 +3,7 @@ Request = function() {
     //Production base url
     //var BASE_URL = 'https://jacob-hanson.com/trackIt/api/'
     //Local dev base url
-    var BASE_URL = 'https://jacob-hanson.com/char-recog/api'
+    var BASE_URL = 'http://35.225.100.251/char-recog/api'
 
     that.POST = function(req, path, completion) {
 	console.log(BASE_URL + path)
